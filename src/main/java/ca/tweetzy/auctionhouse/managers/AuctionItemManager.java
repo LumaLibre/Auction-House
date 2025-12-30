@@ -132,9 +132,4 @@ public class AuctionItemManager {
 
 		return itemList;
 	}
-
-	// Jsinco - Check if an item is in the garbage bin
-	public boolean isGarbageItem(@NonNull AuctionedItem auctionedItem) {
-		return this.garbageBin.containsKey(auctionedItem.getId());
-	}
 }
