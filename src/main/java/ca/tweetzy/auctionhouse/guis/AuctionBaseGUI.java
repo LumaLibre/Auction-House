@@ -18,7 +18,6 @@
 
 package ca.tweetzy.auctionhouse.guis;
 
-import ca.tweetzy.auctionhouse.AuctionHouse;
 import ca.tweetzy.auctionhouse.settings.Settings;
 import ca.tweetzy.flight.comp.enums.CompSound;
 import ca.tweetzy.flight.gui.Gui;

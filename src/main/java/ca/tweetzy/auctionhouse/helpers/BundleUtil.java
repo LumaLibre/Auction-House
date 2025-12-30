@@ -20,7 +20,6 @@ package ca.tweetzy.auctionhouse.helpers;
 
 import ca.tweetzy.auctionhouse.api.AuctionAPI;
 import ca.tweetzy.flight.comp.enums.CompMaterial;
-import ca.tweetzy.flight.comp.enums.CompMaterial;
 import ca.tweetzy.flight.nbtapi.NBT;
 import ca.tweetzy.flight.nbtapi.iface.ReadableItemNBT;
 import lombok.NonNull;

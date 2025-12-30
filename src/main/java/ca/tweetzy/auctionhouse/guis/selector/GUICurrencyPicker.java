@@ -19,7 +19,6 @@ import org.bukkit.inventory.ItemStack;
 
 import java.util.List;
 import java.util.function.BiConsumer;
-import java.util.stream.Collectors;
 
 public final class GUICurrencyPicker extends AuctionPagedGUI<AbstractCurrency> {
 

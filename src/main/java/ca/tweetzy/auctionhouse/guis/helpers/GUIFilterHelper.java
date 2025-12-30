@@ -19,11 +19,11 @@
 package ca.tweetzy.auctionhouse.guis.helpers;
 
 import ca.tweetzy.auctionhouse.AuctionHouse;
+import ca.tweetzy.auctionhouse.api.currency.AbstractCurrency;
 import ca.tweetzy.auctionhouse.auction.AuctionedItem;
 import ca.tweetzy.auctionhouse.auction.enums.AuctionItemCategory;
 import ca.tweetzy.auctionhouse.auction.enums.AuctionSaleType;
 import ca.tweetzy.auctionhouse.auction.enums.AuctionSortType;
-import ca.tweetzy.auctionhouse.api.currency.AbstractCurrency;
 import ca.tweetzy.auctionhouse.settings.Settings;
 import org.bukkit.entity.Player;
 

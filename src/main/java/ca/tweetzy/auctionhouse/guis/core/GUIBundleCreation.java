@@ -29,7 +29,6 @@ import ca.tweetzy.auctionhouse.helpers.AuctionCreator;
 import ca.tweetzy.auctionhouse.helpers.BundleUtil;
 import ca.tweetzy.auctionhouse.model.MaterialCategorizer;
 import ca.tweetzy.auctionhouse.settings.Settings;
-import ca.tweetzy.flight.comp.enums.CompMaterial;
 import ca.tweetzy.core.utils.PlayerUtils;
 import ca.tweetzy.flight.comp.enums.CompMaterial;
 import ca.tweetzy.flight.utils.QuickItem;

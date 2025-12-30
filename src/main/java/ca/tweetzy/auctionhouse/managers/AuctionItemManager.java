@@ -91,6 +91,14 @@ public class AuctionItemManager {
 		this.garbageBin.put(auctionedItem.getId(), auctionedItem);
 	}
 
+	// ca.tweetzy.auctionhouse.managers.AuctionItemManager
+
+	// Jsinco - Check if an item is in the garbage bin
+	public boolean isGarbageItem(@NonNull AuctionedItem auctionedItem) {
+		return this.garbageBin.containsKey(auctionedItem.getId());
+	}
+	// End
+
 	/**
 	 * Atomically marks an item as purchased by adding it to the garbage bin.
 	 * Returns true if the item was successfully marked (wasn't already in garbage),
