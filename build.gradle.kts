@@ -126,7 +126,7 @@ dependencies {
 }
 
 group = "ca.tweetzy"
-version = "2.155.0"
+version = "2.155.1"
 description = "AuctionHouse"
 java.sourceCompatibility = JavaVersion.VERSION_1_8
 

@@ -40,6 +40,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
+// TODO: Come back to this class an ensure these calls are single-threaded only - Jsinco
+
 /**
  * The current file has been created by Kiran Hart
  * Date Created: March 15 2021
@@ -133,29 +135,7 @@ public class GUIExpiredItems extends AuctionPagedGUI<AuctionedItem> {
 		// Send to garbage before giving item to help prevent dupe exploits
 		AuctionHouse.getAuctionItemManager().sendToGarbage(auctionedItem);
 
-		if (isBundle) {
-			if (Settings.BUNDLE_IS_OPENED_ON_RECLAIM.getBoolean()) {
-				final List<ItemStack> bundleItems = BundleUtil.extractBundleItems(auctionedItem.getItem());
-				PlayerUtils.giveItem(click.player, bundleItems);
-			} else {
-				PlayerUtils.giveItem(click.player, auctionedItem.getItem());
-			}
-		} else {
-			final ItemStack item = auctionedItem.getItem();
-
-			NBT.modify(item, nbt -> {
-				nbt.removeKey("AuctionDupeTracking");
-			});
-
-			if (auctionedItem.isRequest()) {
-				item.setAmount(1);
-				for (int i = 0; i < auctionedItem.getRequestAmount(); i++) {
-					PlayerUtils.giveItem(click.player, item);
-				}
-			} else {
-				PlayerUtils.giveItem(click.player, item);
-			}
-		}
+		finalizeItemGive(isBundle, auctionedItem, click);
 
 		click.manager.showGUI(click.player, new GUIExpiredItems(this.parent, this.auctionPlayer, this.lastClicked));
 	}
@@ -211,34 +191,39 @@ public class GUIExpiredItems extends AuctionPagedGUI<AuctionedItem> {
 				}
 
 				// Jsinco - This should be extracted out to a common method but my project cannot index so it's too hard for me to do right now
-				if (isBundle) {
-					if (Settings.BUNDLE_IS_OPENED_ON_RECLAIM.getBoolean()) {
-						final List<ItemStack> bundleItems = BundleUtil.extractBundleItems(auctionItem.getItem());
-						PlayerUtils.giveItem(e.player, bundleItems);
-					} else {
-						PlayerUtils.giveItem(e.player, auctionItem.getItem());
-					}
-				} else {
-					final ItemStack item = auctionItem.getItem();
-					// remove the dupe tracking
-					NBT.modify(item, nbt -> {
-						nbt.removeKey("AuctionDupeTracking");
-					});
-
-					if (auctionItem.isRequest()) {
-						item.setAmount(1);
-						for (int i = 0; i < auctionItem.getRequestAmount(); i++) {
-							PlayerUtils.giveItem(e.player, item);
-						}
-					} else {
-						PlayerUtils.giveItem(e.player, item);
-					}
-				}
+				finalizeItemGive(isBundle, auctionItem, e);
 
 			}
 			// End Jsinco
 
 			e.manager.showGUI(e.player, new GUIExpiredItems(this.auctionPlayer, this.lastClicked));
 		});
+	}
+
+	// Jsinco - Extract out commons
+	private void finalizeItemGive(boolean isBundle, AuctionedItem auctionedItem, GuiClickEvent click) {
+		if (isBundle) {
+			if (Settings.BUNDLE_IS_OPENED_ON_RECLAIM.getBoolean()) {
+				final List<ItemStack> bundleItems = BundleUtil.extractBundleItems(auctionedItem.getItem());
+				PlayerUtils.giveItem(click.player, bundleItems);
+			} else {
+				PlayerUtils.giveItem(click.player, auctionedItem.getItem());
+			}
+		} else {
+			final ItemStack item = auctionedItem.getItem();
+
+			NBT.modify(item, nbt -> {
+				nbt.removeKey("AuctionDupeTracking");
+			});
+
+			if (auctionedItem.isRequest()) {
+				item.setAmount(1);
+				for (int i = 0; i < auctionedItem.getRequestAmount(); i++) {
+					PlayerUtils.giveItem(click.player, item);
+				}
+			} else {
+				PlayerUtils.giveItem(click.player, item);
+			}
+		}
 	}
 }
