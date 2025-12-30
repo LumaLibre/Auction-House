@@ -1,5 +1,5 @@
 name: AuctionHouse
-version: maven-version-number
+version: '${version}'
 api-version: 1.13
 main: ca.tweetzy.auctionhouse.AuctionHouse
 description: Auction House is a premium auction solution for your server.

@@ -190,7 +190,6 @@ public class GUIExpiredItems extends AuctionPagedGUI<AuctionedItem> {
 					break;
 				}
 
-				// Jsinco - This should be extracted out to a common method but my project cannot index so it's too hard for me to do right now
 				finalizeItemGive(isBundle, auctionItem, e);
 
 			}
