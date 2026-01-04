@@ -10,6 +10,7 @@ plugins {
     `maven-publish`
     id("com.gradleup.shadow") version "9.2.2"
     id("xyz.jpenilla.run-paper") version "2.3.1"
+    id("io.freefair.lombok") version "9.1.0"
 }
 
 repositories {
@@ -117,6 +118,7 @@ dependencies {
     api(libs.org.slf4j.slf4j.api)
     api(libs.org.slf4j.slf4j.nop)
     api(libs.com.google.code.gson.gson)
+    compileOnly(libs.su.nightexpress.nightcore.main)
     compileOnly(libs.org.spigotmc.spigot)
     compileOnly(libs.com.github.milkbowl.vaultapi)
     compileOnly(libs.com.willfp.ecobits)

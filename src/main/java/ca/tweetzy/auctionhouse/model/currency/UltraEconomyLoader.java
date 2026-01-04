@@ -20,7 +20,7 @@ public final class UltraEconomyLoader extends CurrencyLoader {
 	public List<AbstractCurrency> getCurrencies() {
 		final List<AbstractCurrency> currencies = new ArrayList<>();
 
-		for (Currency currency : UltraEconomy.getInstance().getCurrencies()) {
+		for (Currency currency : UltraEconomy.getAPI().getCurrencies()) {
 			boolean blackListed = false;
 
 			for (String blacklisted : Settings.CURRENCY_BLACKLISTED.getStringList()) {

@@ -24,6 +24,7 @@ org-slf4j-slf4j-api = "1.7.25"
 org-slf4j-slf4j-nop = "1.7.25"
 org-spigotmc-spigot = "1.21.5-R0.1-SNAPSHOT"
 su-nightexpress-coinsengine-coinsengine = "2.4.1"
+su-nightexpress-nightcore-main = "2.13.0"
 
 [libraries]
 ca-tweetzy-flight = { module = "ca.tweetzy:flight", version.ref = "ca-tweetzy-flight" }
@@ -48,3 +49,4 @@ org-slf4j-slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "org-slf4j
 org-slf4j-slf4j-nop = { module = "org.slf4j:slf4j-nop", version.ref = "org-slf4j-slf4j-nop" }
 org-spigotmc-spigot = { module = "org.spigotmc:spigot", version.ref = "org-spigotmc-spigot" }
 su-nightexpress-coinsengine-coinsengine = { module = "su.nightexpress.coinsengine:CoinsEngine", version.ref = "su-nightexpress-coinsengine-coinsengine" }
+su-nightexpress-nightcore-main = { module = "su.nightexpress.nightcore:main", version.ref = "su-nightexpress-nightcore-main" }
