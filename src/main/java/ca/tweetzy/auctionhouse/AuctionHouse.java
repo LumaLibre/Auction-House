@@ -313,7 +313,7 @@ public class AuctionHouse extends TweetyPlugin {
 			final String uIDPartTwo = "ER__%%";
 
 			if (USER.contains(uIDPartOne) && USER.contains(uIDPartTwo)) {
-				getLogger().severe("Could not detect user ID, are you running a cracked / self-compiled copy of auction house?");
+				getLogger().warning("Could not detect user ID, are you running a cracked / self-compiled copy of auction house?");
 			} else {
 				if (!Settings.HIDE_THANKYOU.getBoolean()) {
 					getConsole().sendMessage(Common.colorize("&e&m--------------------------------------------------------"));

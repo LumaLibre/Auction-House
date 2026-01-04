@@ -177,15 +177,6 @@ tasks {
         relocate("org.slf4j", "$pack.lib.slf4j")
         relocate("co.aikar.taskchain", "$pack.lib.taskchain")
         exclude("kotlin/**")
-        minimize {
-            exclude(dependency("ca.tweetzy:flight"))
-            exclude(dependency("ca.tweetzy:tweetycore"))
-            exclude(dependency("com.zaxxer:HikariCP"))
-            exclude(dependency("org.slf4j:slf4j-api"))
-            exclude(dependency("org.slf4j:slf4j-nop"))
-            exclude(dependency("co.aikar:taskchain-bukkit"))
-            exclude(dependency("co.aikar:taskchain-core"))
-        }
         archiveClassifier.set("")
     }
 

@@ -4,3 +4,5 @@
 AuctionHouse.iml
 /src/main/test/
 /buildNumber.properties
+build/
+.gradle/
