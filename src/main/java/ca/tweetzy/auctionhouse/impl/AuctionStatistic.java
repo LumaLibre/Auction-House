@@ -72,15 +72,15 @@ public final class AuctionStatistic implements Statistic {
 
 	@Override
 	public void store(Consumer<Statistic> stored) {
+		// Add to in-memory manager immediately so queries see the update right away
+		AuctionHouse.getAuctionStatisticManager().addStatistic(this);
+
+		// Save to database asynchronously
 		AuctionHouse.getDataManager().insertStatistic(this, (error, statistic) -> {
 			if (error != null) return;
 
-			if (statistic != null) {
-				AuctionHouse.getAuctionStatisticManager().addStatistic(statistic);
-
-				if (stored != null)
-					stored.accept(statistic);
-			}
+			if (stored != null && statistic != null)
+				stored.accept(statistic);
 		});
 	}
 }
