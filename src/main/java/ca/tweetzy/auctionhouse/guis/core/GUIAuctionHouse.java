@@ -50,6 +50,8 @@ public final class GUIAuctionHouse extends AuctionUpdatingPagedGUI<AuctionedItem
 
 	private final AuctionPlayer auctionPlayer;
 	private String searchKeywords;
+	private Long lastItemClick = null;
+	private Long lastRefreshClick = null;
 
 	public GUIAuctionHouse(@NonNull final AuctionPlayer auctionPlayer, String searchKeywords) {
 		super(null, Bukkit.getPlayer(auctionPlayer.getUuid()), Settings.GUI_AUCTION_HOUSE_TITLE.getString(), Settings.GUI_AUCTION_HOUSE_ROWS.getInt(), 20 * Settings.TICK_UPDATE_GUI_TIME.getInt(), new ArrayList<>());
@@ -248,13 +250,35 @@ public final class GUIAuctionHouse extends AuctionUpdatingPagedGUI<AuctionedItem
 	@Override
 	protected void onClick(AuctionedItem auctionedItem, GuiClickEvent click) {
 
-		// Item administration
+		// Item administration - allow DROP for admin remove item action
 		if (click.clickType == ClickType.valueOf(Settings.CLICKS_REMOVE_ITEM.getString().toUpperCase())) {
 			if (click.player.isOp() || click.player.hasPermission("auctionhouse.admin")) {
 				cancelTask();
 				click.manager.showGUI(click.player, new GUIAdminItem(this.auctionPlayer, auctionedItem));
 			}
 			return;
+		}
+
+		// Block DROP clicks (F key) on items to prevent spam/lag
+		// Only allow if it's the configured remove item click type (handled above)
+		if (click.clickType == ClickType.DROP) {
+			return; // Silently ignore DROP clicks to prevent spam
+		}
+
+		// Rate limiting for item clicks to prevent spam and server lag
+		if (Settings.MAIN_AH_ITEM_CLICK_COOLDOWN.getLong() > 0) {
+			long currentTime = System.currentTimeMillis();
+			if (this.lastItemClick != null && (currentTime - this.lastItemClick) < Settings.MAIN_AH_ITEM_CLICK_COOLDOWN.getLong()) {
+				// Player is on cooldown, show message and return
+				long remainingTime = Settings.MAIN_AH_ITEM_CLICK_COOLDOWN.getLong() - (currentTime - this.lastItemClick);
+				AuctionHouse.getInstance().getLocale()
+						.getMessage("general.cooldown.item click")
+						.processPlaceholder("time", AuctionHouse.getCooldownManager().formatTime(remainingTime))
+						.sendPrefixedMessage(click.player);
+				return;
+			}
+			// Update last click time
+			this.lastItemClick = currentTime;
 		}
 
 		if (!AuctionHouse.getAPI().isAuctionHouseOpen()) {
@@ -770,6 +794,20 @@ public final class GUIAuctionHouse extends AuctionUpdatingPagedGUI<AuctionedItem
 
 		if (Settings.GUI_REFRESH_BTN_ENABLED.getBoolean()) {
 			SlotHelper.getButtonSlots(Settings.GUI_REFRESH_BTN_SLOT.getString()).forEach(slot -> setButton(slot, getRefreshButton(), ClickType.LEFT, e -> {
+				// Early return cooldown check to prevent spam clicking and server lag
+				if (Settings.MAIN_AH_REFRESH_BUTTON_COOLDOWN.getLong() > 0) {
+					long currentTime = System.currentTimeMillis();
+					if (this.lastRefreshClick != null && (currentTime - this.lastRefreshClick) < Settings.MAIN_AH_REFRESH_BUTTON_COOLDOWN.getLong()) {
+						long remainingTime = Settings.MAIN_AH_REFRESH_BUTTON_COOLDOWN.getLong() - (currentTime - this.lastRefreshClick);
+						AuctionHouse.getInstance().getLocale()
+								.getMessage("general.cooldown.refresh")
+								.processPlaceholder("time", AuctionHouse.getCooldownManager().formatTime(remainingTime))
+								.sendPrefixedMessage(e.player);
+						return; // Early return - don't process refresh
+					}
+					this.lastRefreshClick = currentTime;
+				}
+
 				if (Settings.USE_REFRESH_COOL_DOWN.getBoolean()) {
 					if (AuctionHouse.getAuctionPlayerManager().getCooldowns().containsKey(this.auctionPlayer.getPlayer().getUniqueId())) {
 						if (AuctionHouse.getAuctionPlayerManager().getCooldowns().get(this.auctionPlayer.getPlayer().getUniqueId()) > System.currentTimeMillis()) {

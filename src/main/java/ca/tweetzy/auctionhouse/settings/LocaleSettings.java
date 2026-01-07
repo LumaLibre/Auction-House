@@ -54,6 +54,8 @@ public class LocaleSettings {
 		languageNodes.put("general.cooldown.command", "&cPlease wait &4%time% &cto do that again.");
 		languageNodes.put("general.cooldown.filter", "&cPlease wait &4%time% &cto change filter");
 		languageNodes.put("general.cooldown.navigate page", "&cPlease wait &4%time% &cto change pages");
+		languageNodes.put("general.cooldown.item click", "&cPlease wait &4%time% &cto click another item");
+		languageNodes.put("general.cooldown.refresh", "&cPlease wait &4%time% &cto refresh again");
 
 		languageNodes.put("general.cantbidonown", "&cYou cannot bid on your own item!");
 		languageNodes.put("general.alreadyhighestbidder", "&cYou are already the highest bidder!");
