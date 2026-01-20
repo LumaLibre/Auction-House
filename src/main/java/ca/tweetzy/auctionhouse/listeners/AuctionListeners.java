@@ -37,6 +37,7 @@ import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.inventory.ItemStack;
 
 import java.util.UUID;
 
@@ -275,8 +276,7 @@ public class AuctionListeners implements Listener {
 				}
 
 				// Create transaction item with amount 1 - each purchase counts as a single transaction
-				org.bukkit.inventory.ItemStack transactionItem = auctionedItem.getItem().clone();
-				transactionItem.setAmount(1);
+				ItemStack transactionItem = auctionedItem.getItem().clone();
 				
 				final Transaction auctionTransaction = new Transaction(
 						UUID.randomUUID(),
