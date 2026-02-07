@@ -250,6 +250,46 @@ public final class GUIAuctionHouse extends AuctionUpdatingPagedGUI<AuctionedItem
 	@Override
 	protected void onClick(AuctionedItem auctionedItem, GuiClickEvent click) {
 
+		// Watchlist: add/remove listing (middle-click or configured click)
+		if (Settings.WATCHLIST_ENABLED.getBoolean()) {
+			try {
+				if (click.clickType == ClickType.valueOf(Settings.CLICKS_ADD_TO_WATCHLIST.getString().toUpperCase())) {
+					if (click.player.getUniqueId().equals(auctionedItem.getOwner())) {
+						AuctionHouse.getInstance().getLocale().getMessage("watchlist.cannot watch own").sendPrefixedMessage(click.player);
+						return;
+					}
+					if (AuctionHouse.getWatchlistManager().isWatching(click.player.getUniqueId(), auctionedItem.getId())) {
+						AuctionHouse.getWatchlistManager().remove(click.player.getUniqueId(), auctionedItem.getId(), (err, ok) -> {
+							if (ok) {
+								AuctionHouse.getInstance().getLocale().getMessage("watchlist.removed")
+										.processPlaceholder("item", AuctionAPI.getInstance().getItemName(auctionedItem.getItem()))
+										.sendPrefixedMessage(click.player);
+							}
+							draw();
+						});
+					} else {
+						if (AuctionHouse.getWatchlistManager().getWatchlistCount(click.player.getUniqueId()) >= Settings.WATCHLIST_MAX_LISTINGS.getInt()) {
+							AuctionHouse.getInstance().getLocale().getMessage("watchlist.limit reached")
+									.processPlaceholder("max", String.valueOf(Settings.WATCHLIST_MAX_LISTINGS.getInt()))
+									.sendPrefixedMessage(click.player);
+							return;
+						}
+						AuctionHouse.getWatchlistManager().add(click.player.getUniqueId(), auctionedItem.getId(), (err, ok) -> {
+							if (ok) {
+								AuctionHouse.getInstance().getLocale().getMessage("watchlist.added")
+										.processPlaceholder("item", AuctionAPI.getInstance().getItemName(auctionedItem.getItem()))
+										.sendPrefixedMessage(click.player);
+							}
+							draw();
+						});
+					}
+					return;
+				}
+			} catch (IllegalArgumentException ignored) {
+				// Invalid click type in config
+			}
+		}
+
 		// Item administration - allow DROP for admin remove item action
 		if (click.clickType == ClickType.valueOf(Settings.CLICKS_REMOVE_ITEM.getString().toUpperCase())) {
 			if (click.player.isOp() || click.player.hasPermission("auctionhouse.admin")) {
@@ -684,6 +724,16 @@ public final class GUIAuctionHouse extends AuctionUpdatingPagedGUI<AuctionedItem
 				e.manager.showGUI(e.player, new GUIExpiredItems(this, this.auctionPlayer));
 			}));
 
+		}
+
+		if (Settings.WATCHLIST_ENABLED.getBoolean() && Settings.GUI_AUCTION_HOUSE_ITEMS_WATCHLIST_ENABLED.getBoolean()) {
+			SlotHelper.getButtonSlots(Settings.GUI_AUCTION_HOUSE_ITEMS_WATCHLIST_SLOT.getString()).forEach(slot -> setButton(slot, QuickItem
+					.of(Settings.GUI_AUCTION_HOUSE_ITEMS_WATCHLIST_ITEM.getString())
+					.name(Settings.GUI_AUCTION_HOUSE_ITEMS_WATCHLIST_NAME.getString())
+					.lore(this.player, Replacer.replaceVariables(Settings.GUI_AUCTION_HOUSE_ITEMS_WATCHLIST_LORE.getStringList(), "watchlist_count", AuctionHouse.getWatchlistManager().getWatchlistCount(auctionPlayer.getUuid()))).make(), e -> {
+				cancelTask();
+				e.manager.showGUI(e.player, new GUIWatchedListings(this.auctionPlayer));
+			}));
 		}
 
 		if (Settings.GUI_AUCTION_HOUSE_ITEMS_TRANSACTIONS_ENABLED.getBoolean()) {

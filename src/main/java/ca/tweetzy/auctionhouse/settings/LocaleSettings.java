@@ -101,6 +101,11 @@ public class LocaleSettings {
 		languageNodes.put("general.cart.item already in cart", "&cThat item is already in your cart");
 		languageNodes.put("general.cart.item added to cart", "&aAdded that item to your cart.");
 
+		languageNodes.put("watchlist.added", "&aAdded &e%item% &ato your watchlist.");
+		languageNodes.put("watchlist.removed", "&7Removed &e%item% &7from your watchlist.");
+		languageNodes.put("watchlist.limit reached", "&cWatchlist limit reached (&e%max%&c). Remove some listings from /ah watchlist first.");
+		languageNodes.put("watchlist.cannot watch own", "&cYou cannot watch your own listing.");
+
 		languageNodes.put("general.cannot list repaired item", "&cCannot list a repaired item!");
 		languageNodes.put("general.marked chest", "&aYou marked that chest as an Auction chest");
 		languageNodes.put("general.unmarked chest", "&cYou unmarked that chest as an Auction chest");
@@ -298,6 +303,7 @@ public class LocaleSettings {
 		languageNodes.put("commands.syntax.price limit", "pricelimit [set <min/max> <price>]");
 		languageNodes.put("commands.syntax.stats", "stats [player]");
 		languageNodes.put("commands.syntax.request", "request <price> [-single]");
+		languageNodes.put("commands.syntax.watchlist", "watchlist");
 		languageNodes.put("commands.syntax.debug", "debug");
 
 		languageNodes.put("commands.description.active", "View all your auction listings");
@@ -320,6 +326,7 @@ public class LocaleSettings {
 		languageNodes.put("commands.description.price limit", "Adds a minimum sell price to an item");
 		languageNodes.put("commands.description.stats", "View yours or another players stats");
 		languageNodes.put("commands.description.request", "Makes request for item your holding");
+		languageNodes.put("commands.description.watchlist", "View your saved/watchlist listings");
 		languageNodes.put("commands.description.debug", "Toggle debug mode for development and research");
 	}
 

@@ -261,6 +261,7 @@ public class AuctionedItem {
 		}
 
 		final List<String> LISTING_PRIORITY = Settings.AUCTION_STACK_DETAILS_PRIORITY_LISTING.getStringList();
+		final List<String> LISTING_WATCHED = Settings.AUCTION_STACK_DETAILS_WATCHED.getStringList();
 		final List<String> CONTROLS = new ArrayList<>();
 
 		if (type == AuctionStackType.MAIN_AUCTION_HOUSE) {
@@ -285,6 +286,10 @@ public class AuctionedItem {
 
 				if (BundleUtil.isBundledItem(this.item.clone()) || (ServerVersion.isServerVersionAtLeast(ServerVersion.V1_11) && this.item.clone().getType().name().contains("SHULKER_BOX"))) {
 					CONTROLS.addAll(Common.colorize(Settings.AUCTION_STACK_PURCHASE_CONTROLS_INSPECTION.getStringList()));
+				}
+
+				if (Settings.WATCHLIST_ENABLED.getBoolean() && !this.owner.equals(player.getUniqueId())) {
+					CONTROLS.addAll(Common.colorize(Settings.AUCTION_STACK_PURCHASE_CONTROLS_WATCHLIST.getStringList()));
 				}
 			} else {
 				final String[] timesToOpen = AuctionHouse.getAPI().getTimeUntilNextRange(Settings.TIMED_USAGE_RANGE.getStringList());
@@ -326,6 +331,8 @@ public class AuctionedItem {
 		replaceVariable(BASE_LORE, "%bid_increment%", INCREMENT_PRICE, !this.isBidItem || Settings.FORCE_CUSTOM_BID_AMOUNT.getBoolean());
 		replaceVariable(BASE_LORE, "%listing_time%", LISTING_TIME, false);
 		replaceVariable(BASE_LORE, "%listing_priority%", LISTING_PRIORITY, !this.hasListingPriority);
+		boolean isWatched = type == AuctionStackType.MAIN_AUCTION_HOUSE && Settings.WATCHLIST_ENABLED.getBoolean() && AuctionHouse.getWatchlistManager().isWatching(player.getUniqueId(), this.getId());
+		replaceVariable(BASE_LORE, "%listing_watched%", LISTING_WATCHED, !isWatched);
 		replaceVariable(BASE_LORE, "%controls_header%", CONTROLS_HEADER, false);
 		replaceVariable(BASE_LORE, "%controls_footer%", CONTROLS_FOOTER, false);
 		replaceVariable(BASE_LORE, "%controls%", CONTROLS, false);

@@ -78,6 +78,7 @@ public class Settings {
 	public static final ConfigSetting CMD_ALIAS_SUB_TOGGLELISTINFO = new ConfigSetting(config, "command aliases.subcommands.togglelistinfo", Collections.singletonList("togglelistinfo"), "Command aliases for the toggle list info command");
 	public static final ConfigSetting CMD_ALIAS_SUB_TRANSACTIONS = new ConfigSetting(config, "command aliases.subcommands.transactions", Collections.singletonList("transactions"), "Command aliases for the transactions command");
 	public static final ConfigSetting CMD_ALIAS_SUB_UNBAN = new ConfigSetting(config, "command aliases.subcommands.unban", Collections.singletonList("unban"), "Command aliases for the unban command");
+	public static final ConfigSetting CMD_ALIAS_SUB_WATCHLIST = new ConfigSetting(config, "command aliases.subcommands.watchlist", Collections.singletonList("watchlist"), "Command aliases for the watchlist command");
 
 	public static final ConfigSetting CMD_ERROR_DESC = new ConfigSetting(config, "command info.error information", Arrays.asList(
 			"&8&m-----------------------------------------------------",
@@ -118,6 +119,9 @@ public class Settings {
 	public static final ConfigSetting PACKET_NAMESPACE_KEYS = new ConfigSetting(config, "auction setting.packet.namespaced keys", Arrays.asList("ecoitems", "ecoarmor"), "Namespaced keys of plugins using packet lore");
 
 	public static final ConfigSetting CART_SYSTEM_ENABLED = new ConfigSetting(config, "auction setting.cart system.enabled", false, "Should auction house allow the cart system?");
+	public static final ConfigSetting WATCHLIST_ENABLED = new ConfigSetting(config, "auction setting.watchlist.enabled", true, "Should players be able to watch/save listings and view them in a watchlist?");
+	public static final ConfigSetting WATCHLIST_MAX_LISTINGS = new ConfigSetting(config, "auction setting.watchlist.max listings per player", 30, "Maximum number of listings a player can have on their watchlist.");
+	public static final ConfigSetting CLICKS_ADD_TO_WATCHLIST = new ConfigSetting(config, "auction setting.clicks.add to watchlist", "SHIFT_RIGHT", "Click type to add/remove a listing from your watchlist. Valid: LEFT, RIGHT, SHIFT_LEFT, SHIFT_RIGHT");
 	public static final ConfigSetting USE_NAMES_FOR_CHECKS = new ConfigSetting(config, "auction setting.experimental.use names for checks", false, "Do not touch this unless you have a good reason too?");
 
 
@@ -767,6 +771,22 @@ public class Settings {
 			"",
 			"&e&l%expired_player_auctions% Item(s)"
 	));
+
+	public static final ConfigSetting GUI_AUCTION_HOUSE_ITEMS_WATCHLIST_ENABLED = new ConfigSetting(config, "gui.auction house.items.watchlist.enabled", false);
+	public static final ConfigSetting GUI_AUCTION_HOUSE_ITEMS_WATCHLIST_SLOT = new ConfigSetting(config, "gui.auction house.items.watchlist.slot", 53, "Valid Slots: 45 - 53");
+	public static final ConfigSetting GUI_AUCTION_HOUSE_ITEMS_WATCHLIST_ITEM = new ConfigSetting(config, "gui.auction house.items.watchlist.item", "BOOKMARK");
+	public static final ConfigSetting GUI_AUCTION_HOUSE_ITEMS_WATCHLIST_NAME = new ConfigSetting(config, "gui.auction house.items.watchlist.name", "&e&lWatchlist");
+	public static final ConfigSetting GUI_AUCTION_HOUSE_ITEMS_WATCHLIST_LORE = new ConfigSetting(config, "gui.auction house.items.watchlist.lore", Arrays.asList(
+			"&7Click here to view listings you have",
+			"&7saved to your watchlist.",
+			"",
+			"&e&l%watchlist_count% Listing(s)"
+	));
+
+	public static final ConfigSetting GUI_WATCHLIST_TITLE = new ConfigSetting(config, "gui.watchlist.title", "&e&lYour Watchlist");
+	public static final ConfigSetting GUI_WATCHLIST_EMPTY_ITEM = new ConfigSetting(config, "gui.watchlist.empty.item", "BARRIER");
+	public static final ConfigSetting GUI_WATCHLIST_EMPTY_NAME = new ConfigSetting(config, "gui.watchlist.empty.name", "&cNo watched listings");
+	public static final ConfigSetting GUI_WATCHLIST_EMPTY_LORE = new ConfigSetting(config, "gui.watchlist.empty.lore", Collections.singletonList("&7Use middle-click on a listing in the AH to add it here."));
 
 	public static final ConfigSetting GUI_AUCTION_HOUSE_ITEMS_FILTER_ENABLED = new ConfigSetting(config, "gui.auction house.items.filter.enabled", true);
 	public static final ConfigSetting GUI_AUCTION_HOUSE_ITEMS_FILTER_SLOT = new ConfigSetting(config, "gui.auction house.items.filter.slot", 47, "Valid Slots: 45 - 53");
@@ -1768,6 +1788,10 @@ public class Settings {
 			"<GRADIENT:F55C7A>&LPriority Listing</GRADIENT:F6BC66>"
 	));
 
+	public static final ConfigSetting AUCTION_STACK_DETAILS_WATCHED = new ConfigSetting(config, "auction stack.watched lines", Collections.singletonList(
+			"<GRADIENT:3A7BD5>&LWatched</GRADIENT:00D2FF>"
+	), "Shown on main auction house listings when the viewing player has this listing on their watchlist");
+
 	public static final ConfigSetting AUCTION_STACK_DETAILS_TIME_LEFT = new ConfigSetting(config, "auction stack.time left lines", Arrays.asList(
 			"&eTime Left: &b%remaining_days%&fd &b%remaining_hours%&fh &b%remaining_minutes%&fm &b%remaining_seconds%s"
 	));
@@ -1814,6 +1838,10 @@ public class Settings {
 			"&eShift Left-Click&f: &bBuy Quantity"
 	), "This will be appended at the end of the lore", "If the auction item allows partial buys, this will be added");
 
+	public static final ConfigSetting AUCTION_STACK_PURCHASE_CONTROLS_WATCHLIST = new ConfigSetting(config, "auction stack.controls.watchlist", Collections.singletonList(
+			"&eShift Right-Click&f: &bTo Watch/Unwatch"
+	), "This will be appended at the end of the lore", "Shown on main auction house listings when watchlist is enabled and the listing is not your own");
+
 	public static final ConfigSetting AUCTION_STACK_AUCTION_CLOSED = new ConfigSetting(config, "auction stack.controls.auction house closed", Arrays.asList(
 			"&cAuction House is Closed",
 			"&eReopens in: &b%hours%&fh &b%minutes%&fm &b%seconds%&fs"
@@ -1832,6 +1860,7 @@ public class Settings {
 			"",
 			"%listing_time%",
 			"%listing_priority%",
+			"%listing_watched%",
 			"%controls_header%",
 			"%controls%",
 			"%controls_footer%"

@@ -1325,6 +1325,96 @@ public class DataManager extends DataManagerAbstract {
 		});
 	}
 
+	// ======================== Watchlist ======================== //
+
+	private record WatchlistEntry(UUID playerUuid, UUID listingId) {}
+
+	public void getWatchlistEntries(Callback<HashMap<UUID, HashSet<UUID>>> callback) {
+		this.runAsync(() -> {
+			getQueryBuilder().select("watchlist")
+					.fetch(rs -> {
+						try {
+							return new WatchlistEntry(
+									UUID.fromString(rs.getString("player_uuid")),
+									UUID.fromString(rs.getString("listing_id")));
+						} catch (SQLException e) {
+							return null;
+						}
+					}, (ex, results) -> {
+						if (ex != null) {
+							resolveCallback(callback, ex);
+							return;
+						}
+						HashMap<UUID, HashSet<UUID>> map = new HashMap<>();
+						if (results != null) {
+							for (WatchlistEntry entry : results) {
+								if (entry != null) {
+									map.computeIfAbsent(entry.playerUuid(), k -> new HashSet<>()).add(entry.listingId());
+								}
+							}
+						}
+						if (callback != null) {
+							callback.accept(null, map);
+						}
+					});
+		});
+	}
+
+	public void addWatchlistEntry(UUID playerUuid, UUID listingId, Callback<Boolean> callback) {
+		this.runAsync(() -> {
+			try {
+				getQueryBuilder().insert("watchlist")
+						.set("player_uuid", playerUuid.toString())
+						.set("listing_id", listingId.toString())
+						.set("created_at", System.currentTimeMillis())
+						.execute((ex, affectedRows) -> {
+							if (ex != null) {
+								resolveCallback(callback, ex);
+								return;
+							}
+							if (callback != null) {
+								callback.accept(null, affectedRows != null && affectedRows > 0);
+							}
+						});
+			} catch (Exception e) {
+				resolveCallback(callback, e);
+			}
+		});
+	}
+
+	public void removeWatchlistEntry(UUID playerUuid, UUID listingId, Callback<Boolean> callback) {
+		this.runAsync(() -> {
+			getQueryBuilder().delete("watchlist")
+					.where("player_uuid", playerUuid.toString())
+					.where("listing_id", listingId.toString())
+					.execute((ex, affectedRows) -> {
+						if (ex != null) {
+							resolveCallback(callback, ex);
+							return;
+						}
+						if (callback != null) {
+							callback.accept(null, affectedRows != null && affectedRows > 0);
+						}
+					});
+		});
+	}
+
+	public void removeWatchlistEntriesForListing(UUID listingId, Callback<Void> callback) {
+		this.runAsync(() -> {
+			getQueryBuilder().delete("watchlist")
+					.where("listing_id", listingId.toString())
+					.execute((ex, affectedRows) -> {
+						if (ex != null && callback != null) {
+							resolveCallback(callback, ex);
+							return;
+						}
+						if (callback != null) {
+							callback.accept(null, null);
+						}
+					});
+		});
+	}
+
 	public void getAuctionPayments(Callback<ArrayList<AuctionPayment>> callback) {
 		this.runAsync(() -> {
 			this.databaseConnector.connect(connection -> {

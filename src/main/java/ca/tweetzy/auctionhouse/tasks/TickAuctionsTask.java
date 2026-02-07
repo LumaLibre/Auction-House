@@ -76,6 +76,7 @@ public class TickAuctionsTask extends BukkitRunnable {
 
 			if (AuctionHouse.getAuctionItemManager().getGarbageBin().containsKey(auctionItem.getId())) {
 				AuctionHouse.getAuctionItemManager().getGarbageBin().remove(auctionItem.getId());
+				AuctionHouse.getWatchlistManager().removeListing(auctionItem.getId());
 				AuctionHouse.getAuctionItemManager().getDeletedItems().put(auctionItem.getId(), auctionItem);
 				auctionItemIterator.remove();
 				continue;

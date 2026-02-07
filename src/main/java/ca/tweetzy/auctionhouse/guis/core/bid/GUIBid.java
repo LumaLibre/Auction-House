@@ -62,6 +62,42 @@ public class GUIBid extends AuctionBaseGUI {
 	protected void draw() {
 		setItem(1, 4, this.auctionItem.getItem());
 
+		// Watchlist toggle (only if not own listing and watchlist enabled)
+		if (Settings.WATCHLIST_ENABLED.getBoolean() && !this.auctionPlayer.getUuid().equals(this.auctionItem.getOwner())) {
+			boolean watching = AuctionHouse.getWatchlistManager().isWatching(this.auctionPlayer.getUuid(), this.auctionItem.getId());
+			setButton(2, 4, QuickItem
+					.of(watching ? "BARRIER" : "BOOKMARK")
+					.name(watching ? "&c&lRemove from Watchlist" : "&a&lAdd to Watchlist")
+					.lore("&7Click to " + (watching ? "remove this listing from" : "add this listing to") + " your watchlist.")
+					.make(), e -> {
+				if (watching) {
+					AuctionHouse.getWatchlistManager().remove(e.player.getUniqueId(), this.auctionItem.getId(), (err, ok) -> {
+						if (ok) {
+							AuctionHouse.getInstance().getLocale().getMessage("watchlist.removed")
+									.processPlaceholder("item", AuctionAPI.getInstance().getItemName(this.auctionItem.getItem()))
+									.sendPrefixedMessage(e.player);
+							draw();
+						}
+					});
+				} else {
+					if (AuctionHouse.getWatchlistManager().getWatchlistCount(e.player.getUniqueId()) >= Settings.WATCHLIST_MAX_LISTINGS.getInt()) {
+						AuctionHouse.getInstance().getLocale().getMessage("watchlist.limit reached")
+								.processPlaceholder("max", String.valueOf(Settings.WATCHLIST_MAX_LISTINGS.getInt()))
+								.sendPrefixedMessage(e.player);
+						return;
+					}
+					AuctionHouse.getWatchlistManager().add(e.player.getUniqueId(), this.auctionItem.getId(), (err, ok) -> {
+						if (ok) {
+							AuctionHouse.getInstance().getLocale().getMessage("watchlist.added")
+									.processPlaceholder("item", AuctionAPI.getInstance().getItemName(this.auctionItem.getItem()))
+									.sendPrefixedMessage(e.player);
+							draw();
+						}
+					});
+				}
+			});
+		}
+
 		setButton(1, 2, QuickItem
 				.of(Settings.GUI_BIDDING_ITEMS_DEFAULT_ITEM.getString())
 				.name(Settings.GUI_BIDDING_ITEMS_DEFAULT_NAME.getString())
