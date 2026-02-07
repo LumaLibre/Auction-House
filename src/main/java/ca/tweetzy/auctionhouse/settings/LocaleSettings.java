@@ -89,6 +89,7 @@ public class LocaleSettings {
 		languageNodes.put("general.toggled listing.on", "&aYou turned on listing messages");
 		languageNodes.put("general.toggled listing.off", "&cYou turned off listing messages");
 		languageNodes.put("general.bought_item", "&aYou bought &fx%amount% %item%&a for &a%price%");
+		languageNodes.put("general.offline notifications more", "&7You have &e%count%&7 more offline notifications.");
 		languageNodes.put("general.wait_to_list", "&cPlease wait &4%time%&cs before listing another item");
 		languageNodes.put("general.please_enter_at_least_one_number", "&cPlease enter at least 1 valid number!");
 		languageNodes.put("general.cannot cancel item with bid", "&cYou cannot cancel a listing that already has a bid!");

@@ -32,6 +32,9 @@ import ca.tweetzy.flight.utils.input.TitleInput;
 import ca.tweetzy.auctionhouse.settings.Settings;
 import ca.tweetzy.flight.utils.MathUtil;
 import ca.tweetzy.flight.utils.QuickItem;
+
+import java.util.HashMap;
+
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.OfflinePlayer;
@@ -223,11 +226,20 @@ public class GUIBid extends AuctionBaseGUI {
 								), null);
 							else
 								AuctionHouse.getCurrencyManager().deposit(oldBidder, oldBidAmount, auctionItem.getCurrency(), auctionItem.getCurrencyItem());
-							if (oldBidder.isOnline())
+							String[] currencyParts = auctionItem.getCurrency().split("/");
+							String balanceStr = AuctionHouse.getAPI().getFinalizedCurrencyNumber(AuctionHouse.getCurrencyManager().getBalance(oldBidder, currencyParts.length > 0 ? currencyParts[0] : "Vault", currencyParts.length > 1 ? currencyParts[1] : "Vault"), auctionItem.getCurrency(), auctionItem.getCurrencyItem());
+							String priceStr = AuctionHouse.getAPI().getFinalizedCurrencyNumber(oldBidAmount, auctionItem.getCurrency(), auctionItem.getCurrencyItem());
+							if (oldBidder.isOnline() && oldBidder.getPlayer() != null) {
 								AuctionHouse.getInstance().getLocale().getMessage("pricing.moneyadd")
-										.processPlaceholder("player_balance", AuctionHouse.getAPI().getFinalizedCurrencyNumber(AuctionHouse.getCurrencyManager().getBalance(oldBidder, auctionItem.getCurrency().split("/")[0], auctionItem.getCurrency().split("/")[1]), auctionItem.getCurrency(), auctionItem.getCurrencyItem()))
-										.processPlaceholder("price", AuctionHouse.getAPI().getFinalizedCurrencyNumber(oldBidAmount, auctionItem.getCurrency(), auctionItem.getCurrencyItem()))
+										.processPlaceholder("player_balance", balanceStr)
+										.processPlaceholder("price", priceStr)
 										.sendPrefixedMessage(oldBidder.getPlayer());
+							} else {
+								HashMap<String, String> placeholders = new HashMap<>();
+								placeholders.put("player_balance", balanceStr);
+								placeholders.put("price", priceStr);
+								AuctionHouse.getNotificationManager().queue(oldBidder.getUniqueId(), "pricing.moneyadd", placeholders);
+							}
 						}
 
 						AuctionHouse.getCurrencyManager().withdraw(e.player, newBiddingAmount, auctionItem.getCurrency(), auctionItem.getCurrencyItem());
@@ -250,21 +262,34 @@ public class GUIBid extends AuctionBaseGUI {
 						auctionItem.setExpiresAt(auctionItem.getExpiresAt() + 1000L * Settings.TIME_TO_INCREASE_BY_ON_BID.getInt());
 					}
 
-					if (oldBidder.isOnline()) {
+					if (oldBidder.isOnline() && oldBidder.getPlayer() != null) {
 						AuctionHouse.getInstance().getLocale().getMessage("auction.outbid")
 								.processPlaceholder("player", e.player.getName())
 								.processPlaceholder("player_displayname", AuctionAPI.getInstance().getDisplayName(e.player))
 								.processPlaceholder("item", AuctionAPI.getInstance().getItemName(itemStack))
 								.sendPrefixedMessage(oldBidder.getPlayer());
+					} else {
+						HashMap<String, String> outbidPlaceholders = new HashMap<>();
+						outbidPlaceholders.put("player", e.player.getName());
+						outbidPlaceholders.put("player_displayname", AuctionAPI.getInstance().getDisplayName(e.player));
+						outbidPlaceholders.put("item", AuctionAPI.getInstance().getItemName(itemStack));
+						AuctionHouse.getNotificationManager().queue(oldBidder.getUniqueId(), "auction.outbid", outbidPlaceholders);
 					}
 
-					if (owner.isOnline()) {
+					if (owner.isOnline() && owner.getPlayer() != null) {
 						AuctionHouse.getInstance().getLocale().getMessage("auction.placedbid")
 								.processPlaceholder("player", e.player.getName())
 								.processPlaceholder("player_displayname", AuctionAPI.getInstance().getDisplayName(e.player))
 								.processPlaceholder("amount", AuctionHouse.getAPI().getFinalizedCurrencyNumber(auctionItem.getCurrentPrice(), auctionItem.getCurrency(), auctionItem.getCurrencyItem()))
 								.processPlaceholder("item", AuctionAPI.getInstance().getItemName(itemStack))
 								.sendPrefixedMessage(owner.getPlayer());
+					} else {
+						HashMap<String, String> placedbidPlaceholders = new HashMap<>();
+						placedbidPlaceholders.put("player", e.player.getName());
+						placedbidPlaceholders.put("player_displayname", AuctionAPI.getInstance().getDisplayName(e.player));
+						placedbidPlaceholders.put("amount", AuctionHouse.getAPI().getFinalizedCurrencyNumber(auctionItem.getCurrentPrice(), auctionItem.getCurrency(), auctionItem.getCurrencyItem()));
+						placedbidPlaceholders.put("item", AuctionAPI.getInstance().getItemName(itemStack));
+						AuctionHouse.getNotificationManager().queue(owner.getUniqueId(), "auction.placedbid", placedbidPlaceholders);
 					}
 
 					if (Settings.BROADCAST_AUCTION_BID.getBoolean()) {

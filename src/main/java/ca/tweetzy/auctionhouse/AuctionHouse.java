@@ -108,6 +108,7 @@ public class AuctionHouse extends TweetyPlugin {
 	private final AuctionStatisticManager auctionStatisticManager = new AuctionStatisticManager();
 	private final PaymentsManager paymentsManager = new PaymentsManager();
 	private final WatchlistManager watchlistManager = new WatchlistManager();
+	private final NotificationManager notificationManager = new NotificationManager();
 
 	private TransactionLogger transactionLogger;
 
@@ -205,7 +206,8 @@ public class AuctionHouse extends TweetyPlugin {
 				new _30_MinMaxItemPriceMigration(),
 				new _31_RequestTransactionMigration(),
 				new _32_CreatedAtMigration(),
-				new _33_WatchlistMigration()
+				new _33_WatchlistMigration(),
+				new _34_OfflineNotificationsMigration()
 		);
 
 		dataMigrationManager.runMigrations();
@@ -460,6 +462,10 @@ public class AuctionHouse extends TweetyPlugin {
 
 	public static WatchlistManager getWatchlistManager() {
 		return getInstance().watchlistManager;
+	}
+
+	public static NotificationManager getNotificationManager() {
+		return getInstance().notificationManager;
 	}
 
 	public static CurrencyManager getCurrencyManager() {
