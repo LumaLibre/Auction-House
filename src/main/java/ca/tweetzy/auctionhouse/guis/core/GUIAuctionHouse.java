@@ -241,9 +241,13 @@ public final class GUIAuctionHouse extends AuctionUpdatingPagedGUI<AuctionedItem
 					.replace("[player] ", "").replace("[console]", "");
 
 			if (isConsoleCommand) {
-				Bukkit.getServer().dispatchCommand(Bukkit.getConsoleSender(), finalCommand.replace("%player%", click.player.getName()));
+				AuctionHouse.getInstance().getScheduler().runNextTick(t -> {
+					Bukkit.getServer().dispatchCommand(Bukkit.getConsoleSender(), finalCommand.replace("%player%", click.player.getName()));
+				});
 			} else {
-				click.player.performCommand(finalCommand.replace("%player%", click.player.getName()));
+				AuctionHouse.getInstance().getScheduler().runAtEntity(click.player, t -> {
+					click.player.performCommand(finalCommand.replace("%player%", click.player.getName()));
+				});
 			}
 		});
 	}
