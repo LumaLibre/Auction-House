@@ -2,7 +2,7 @@
 # https://docs.gradle.org/current/userguide/platforms.html#sub::toml-dependencies-format
 
 [versions]
-ca-tweetzy-flight = "3.44.0"
+ca-tweetzy-flight = "3.46.2" # From: repo.jsinco.dev/releases
 ca-tweetzy-funds = "1.10.0"
 ca-tweetzy-tweetycore = "3.11.0"
 co-aikar-taskchain-bukkit = "3.7.2"

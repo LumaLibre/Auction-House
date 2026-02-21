@@ -37,7 +37,7 @@ import java.util.stream.IntStream;
  */
 public class Settings {
 
-	static final Config config = AuctionHouse.getInstance().getCoreConfig();
+	static final Config config = AuctionHouse.getInstance().getTweetyCoreConfig();
 
 	public static final ConfigSetting LANG = new ConfigSetting(config, "lang", "en_US", "Default language file");
 	public static final ConfigSetting HIDE_THANKYOU = new ConfigSetting(config, "hide thank you", false, "Hides the purchase thank you message in the console.");

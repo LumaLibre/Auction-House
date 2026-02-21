@@ -155,7 +155,7 @@ public class AuctionPlayerManager {
 				all.forEach(this::addPlayer);
 
 				// add all online players
-				Bukkit.getServer().getScheduler().runTaskLaterAsynchronously(instance, () -> Bukkit.getOnlinePlayers().forEach(this::addPlayer), 20 * 3);
+				AuctionHouse.getInstance().getScheduler().runLaterAsync(() -> Bukkit.getOnlinePlayers().forEach(this::addPlayer), 20 * 3);
 			}
 		});
 	}

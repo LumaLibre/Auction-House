@@ -743,12 +743,12 @@ public class AuctionAPI {
 
 	public void withdrawBalance(OfflinePlayer player, double amount, AuctionedItem auctionedItem) {
 		if (Settings.PAYMENT_HANDLE_USE_CMD.getBoolean()) {
-			AuctionHouse.newChain().sync(() -> {
+			AuctionHouse.getInstance().getScheduler().runNextTick((t) -> {
 				Bukkit.dispatchCommand(Bukkit.getConsoleSender(), Settings.PAYMENT_HANDLE_WITHDRAW_CMD.getString().replace("%player%", player.getName()).replace("%price%", String.valueOf(amount)));
-			}).execute();
+			});
 		} else {
 			if (Settings.FORCE_SYNC_MONEY_ACTIONS.getBoolean())
-				AuctionHouse.newChain().sync(() -> handleWithdraw(player, amount, auctionedItem)).execute();
+				AuctionHouse.getInstance().getScheduler().runNextTick((t) -> handleWithdraw(player, amount, auctionedItem));
 			else {
 				handleWithdraw(player, amount, auctionedItem);
 			}
@@ -775,10 +775,10 @@ public class AuctionAPI {
 
 	private void initiatePayment(OfflinePlayer player, double amount, AuctionedItem auctionedItem) {
 		if (Settings.PAYMENT_HANDLE_USE_CMD.getBoolean()) {
-			AuctionHouse.newChain().sync(() -> Bukkit.dispatchCommand(Bukkit.getConsoleSender(), Settings.PAYMENT_HANDLE_DEPOSIT_CMD.getString().replace("%player%", player.getName()).replace("%price%", String.valueOf(amount)))).execute();
+			AuctionHouse.getInstance().getScheduler().runNextTick((t) -> Bukkit.dispatchCommand(Bukkit.getConsoleSender(), Settings.PAYMENT_HANDLE_DEPOSIT_CMD.getString().replace("%player%", player.getName()).replace("%price%", String.valueOf(amount))));
 		} else {
 			if (Settings.FORCE_SYNC_MONEY_ACTIONS.getBoolean())
-				AuctionHouse.newChain().sync(() -> handleDeposit(player, amount, auctionedItem)).execute();
+				AuctionHouse.getInstance().getScheduler().runNextTick((t) -> handleDeposit(player, amount, auctionedItem));
 			else {
 				handleDeposit(player, amount, auctionedItem);
 			}

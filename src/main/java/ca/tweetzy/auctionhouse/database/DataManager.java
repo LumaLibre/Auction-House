@@ -263,7 +263,9 @@ public class DataManager extends DataManagerAbstract {
 					}, (ex, results) -> {
 						if (ex != null) {
 							ex.printStackTrace();
-							this.sync(() -> callback.accept(new ArrayList<>()));
+							AuctionHouse.getInstance().getScheduler().runNextTick(t -> {
+								callback.accept(new ArrayList<>());
+							});
 							return;
 						}
 						ArrayList<AuctionFilterItem> filterItems = new ArrayList<>();
@@ -274,7 +276,9 @@ public class DataManager extends DataManagerAbstract {
 								}
 							}
 						}
-						this.sync(() -> callback.accept(filterItems));
+						AuctionHouse.getInstance().getScheduler().runNextTick(t -> {
+							callback.accept(filterItems);
+						});
 					});
 		});
 	}
@@ -1658,7 +1662,7 @@ public class DataManager extends DataManagerAbstract {
 				true,
 				resultSet.getLong("last_listed_item"),
 				null,
-				-1,
+				null,
 				-1,
 				AuctionHouse.getCurrencyManager().getAllCurrency()
 		);

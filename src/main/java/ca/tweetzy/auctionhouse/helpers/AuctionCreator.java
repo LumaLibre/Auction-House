@@ -139,10 +139,18 @@ public final class AuctionCreator {
 
 		// check if not request
 		if (!auctionItem.isRequest()) {
-			if (Bukkit.isPrimaryThread()) {
-				Bukkit.getServer().getPluginManager().callEvent(startEvent);
+			if (seller != null) {
+				if (AuctionHouse.getInstance().getScheduler().isOwnedByCurrentRegion(seller)) {
+					Bukkit.getServer().getPluginManager().callEvent(startEvent);
+				} else {
+					AuctionHouse.getInstance().getScheduler().runAtEntity(seller, (t) -> Bukkit.getServer().getPluginManager().callEvent(startEvent));
+				}
 			} else {
-				Bukkit.getScheduler().runTask(AuctionHouse.getInstance(), () -> Bukkit.getServer().getPluginManager().callEvent(startEvent));
+				if (Bukkit.isPrimaryThread()) {
+					Bukkit.getServer().getPluginManager().callEvent(startEvent);
+				} else {
+					AuctionHouse.getInstance().getScheduler().runNextTick((t) -> Bukkit.getServer().getPluginManager().callEvent(startEvent));
+				}
 			}
 		}
 

@@ -20,7 +20,7 @@ package ca.tweetzy.auctionhouse.model;
 
 import ca.tweetzy.auctionhouse.AuctionHouse;
 import ca.tweetzy.auctionhouse.settings.Settings;
-import org.bukkit.Bukkit;
+import ca.tweetzy.flight.folialib.wrapper.task.WrappedTask;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -44,8 +44,8 @@ public final class TransactionLogger {
 	private BufferedWriter writer;
 	private String currentLogDate;
 	private final ConcurrentLinkedQueue<String> messageQueue = new ConcurrentLinkedQueue<>();
-	private int taskId = -1;
-	private int cleanupTaskId = -1;
+	private WrappedTask task;
+	private WrappedTask cleanupTask;
 	
 	private volatile boolean running = false;
 
@@ -69,24 +69,24 @@ public final class TransactionLogger {
 		openLogFile();
 		
 		// Start async task to flush messages
-		taskId = Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, () -> {
+		task = AuctionHouse.getInstance().getScheduler().runTimerAsync(() -> {
 			try {
 				flushMessages();
 			} catch (Exception e) {
 				plugin.getLogger().severe("Error flushing transaction log messages: " + e.getMessage());
 				e.printStackTrace();
 			}
-		}, 20L, 20L).getTaskId(); // Flush every second
+		}, 20L, 20L); // Flush every second
 		
 		// Start cleanup task (runs daily)
-		cleanupTaskId = Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, () -> {
+		cleanupTask = AuctionHouse.getInstance().getScheduler().runTimerAsync(() -> {
 			try {
 				cleanupOldLogs();
 			} catch (Exception e) {
 				plugin.getLogger().severe("Error cleaning up old transaction logs: " + e.getMessage());
 				e.printStackTrace();
 			}
-		}, 20L * 60L * 60L, 20L * 60L * 60L * 24L).getTaskId(); // Run every 24 hours, starting 1 hour after startup
+		}, 20L * 60L * 60L, 20L * 60L * 60L * 24L); // Run every 24 hours, starting 1 hour after startup
 	}
 
 	/**
@@ -96,14 +96,12 @@ public final class TransactionLogger {
 		running = false;
 		
 		// Cancel tasks
-		if (taskId != -1) {
-			Bukkit.getScheduler().cancelTask(taskId);
-			taskId = -1;
+		if (task != null && !task.isCancelled()) {
+			task.cancel();
 		}
 		
-		if (cleanupTaskId != -1) {
-			Bukkit.getScheduler().cancelTask(cleanupTaskId);
-			cleanupTaskId = -1;
+		if (cleanupTask != null && !cleanupTask.isCancelled()) {
+			cleanupTask.cancel();
 		}
 		
 		// Flush remaining messages

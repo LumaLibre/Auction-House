@@ -102,6 +102,10 @@ repositories {
     maven {
         url = uri("https://nexus.hartserver.ca/repository/maven-releases")
     }
+
+    maven {
+        url = uri("https://repo.jsinco.dev/releases") // Folia supported Flight API
+    }
 }
 
 dependencies {
@@ -135,7 +139,7 @@ dependencies {
 group = "ca.tweetzy"
 version = "2.155.1"
 description = "AuctionHouse"
-java.sourceCompatibility = JavaVersion.VERSION_1_8
+java.sourceCompatibility = JavaVersion.VERSION_21
 
 publishing {
     publications.create<MavenPublication>("maven") {

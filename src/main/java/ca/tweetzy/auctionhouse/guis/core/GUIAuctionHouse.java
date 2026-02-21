@@ -209,13 +209,13 @@ public final class GUIAuctionHouse extends AuctionUpdatingPagedGUI<AuctionedItem
 	 * Draws custom buttons from configuration
 	 */
 	private void drawCustomButtons() {
-		final ConfigurationSection customItemSection = AuctionHouse.getInstance().getCoreConfig().getConfigurationSection("gui.auction house.custom items");
+		final ConfigurationSection customItemSection = AuctionHouse.getInstance().getTweetyCoreConfig().getConfigurationSection("gui.auction house.custom items");
 		if (customItemSection == null) {
 			return;
 		}
 
 		customItemSection.getKeys(false).forEach(customItemEntry -> {
-			final ConfigurationSection customEntry = AuctionHouse.getInstance().getCoreConfig().getConfigurationSection("gui.auction house.custom items." + customItemEntry);
+			final ConfigurationSection customEntry = AuctionHouse.getInstance().getTweetyCoreConfig().getConfigurationSection("gui.auction house.custom items." + customItemEntry);
 			if (customEntry == null) {
 				return;
 			}

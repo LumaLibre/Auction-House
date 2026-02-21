@@ -52,7 +52,7 @@ public final class NotificationManager {
 					: list;
 			List<UUID> toDelete = toDeliver.stream().map(QueuedNotification::getId).collect(Collectors.toList());
 
-			Bukkit.getScheduler().runTask(AuctionHouse.getInstance(), () -> {
+			AuctionHouse.getInstance().getScheduler().runAtEntity(player, (t) -> {
 				for (QueuedNotification n : toDeliver) {
 					Map<String, String> placeholders = parsePlaceholders(n.getPlaceholderDataJson());
 					var msg = AuctionHouse.getInstance().getLocale().getMessage(n.getMessageKey());

@@ -87,7 +87,7 @@ public abstract class AuctionPagedGUI<T> extends BaseGUI {
 				renderItems();
 			} else {
 				// Do all heavy work async, then update GUI on main thread
-				AuctionHouse.newChain().asyncFirst(() -> {
+				AuctionHouse.getInstance().getScheduler().runAsync((a) -> {
 					// Heavy operations on async thread:
 					// - prePopulate() might do filtering/sorting
 					// - Stream operations for pagination
@@ -107,54 +107,56 @@ public abstract class AuctionPagedGUI<T> extends BaseGUI {
 					}
 					
 					// Return both maps as a pair
-					return new Object[] { slotToItemStack, slotToObject };
-				}).asyncLast((result) -> {
-					@SuppressWarnings("unchecked")
-					final Map<Integer, ItemStack> slotToItemStack = (Map<Integer, ItemStack>) ((Object[]) result)[0];
-					@SuppressWarnings("unchecked")
-					final Map<Integer, T> slotToObject = (Map<Integer, T>) ((Object[]) result)[1];
-					
-					// Calculate pages
-					pages = (int) Math.max(1, Math.ceil(this.items.size() / (double) this.fillSlots().size()));
-					
-					// Clear fill slots
-					this.fillSlots().forEach(slot -> setItem(slot, getDefaultItem()));
+					var result = new Object[] { slotToItemStack, slotToObject };
 
-					// Set up navigation buttons
-					// Only show previous button if not on first page
-					if (this.page > 1) {
-						setButton(getPreviousButtonSlot(), getPreviousButton(), click -> {
-							prevPage();
-							draw();
-						});
-					} else {
-						// Lock slot and remove click handlers when button is hidden
-						setUnlocked(getPreviousButtonSlot(), false);
-						setConditional(getPreviousButtonSlot(), null, null);
-						setItem(getPreviousButtonSlot(), getDefaultItem());
-					}
-					
-					// Only show next button if not on last page
-					if (this.page < pages) {
-						setButton(getNextButtonSlot(), getNextButton(), click -> {
-							nextPage();
-							draw();
-						});
-					} else {
-						// Lock slot and remove click handlers when button is hidden
-						setUnlocked(getNextButtonSlot(), false);
-						setConditional(getNextButtonSlot(), null, null);
-						setItem(getNextButtonSlot(), getDefaultItem());
-					}
+					AuctionHouse.getInstance().getScheduler().runAtEntity(player, (t) -> {
+						@SuppressWarnings("unchecked")
+						final Map<Integer, ItemStack> slotToItemStackSync = (Map<Integer, ItemStack>) ((Object[]) result)[0];
+						@SuppressWarnings("unchecked")
+						final Map<Integer, T> slotToObjectSync = (Map<Integer, T>) ((Object[]) result)[1];
 
-					// Set items for current page using pre-built ItemStacks
-					for (Map.Entry<Integer, ItemStack> entry : slotToItemStack.entrySet()) {
-						final int slot = entry.getKey();
-						final ItemStack itemStack = entry.getValue();
-						final T object = slotToObject.get(slot);
-						setButton(slot, itemStack, click -> this.onClick(object, click));
-					}
-				}).execute();
+						// Calculate pages
+						pages = (int) Math.max(1, Math.ceil(this.items.size() / (double) this.fillSlots().size()));
+
+						// Clear fill slots
+						this.fillSlots().forEach(slot -> setItem(slot, getDefaultItem()));
+
+						// Set up navigation buttons
+						// Only show previous button if not on first page
+						if (this.page > 1) {
+							setButton(getPreviousButtonSlot(), getPreviousButton(), click -> {
+								prevPage();
+								draw();
+							});
+						} else {
+							// Lock slot and remove click handlers when button is hidden
+							setUnlocked(getPreviousButtonSlot(), false);
+							setConditional(getPreviousButtonSlot(), null, null);
+							setItem(getPreviousButtonSlot(), getDefaultItem());
+						}
+
+						// Only show next button if not on last page
+						if (this.page < pages) {
+							setButton(getNextButtonSlot(), getNextButton(), click -> {
+								nextPage();
+								draw();
+							});
+						} else {
+							// Lock slot and remove click handlers when button is hidden
+							setUnlocked(getNextButtonSlot(), false);
+							setConditional(getNextButtonSlot(), null, null);
+							setItem(getNextButtonSlot(), getDefaultItem());
+						}
+
+						// Set items for current page using pre-built ItemStacks
+						for (Map.Entry<Integer, ItemStack> entry : slotToItemStackSync.entrySet()) {
+							final int slot = entry.getKey();
+							final ItemStack itemStack = entry.getValue();
+							final T object = slotToObjectSync.get(slot);
+							setButton(slot, itemStack, click -> this.onClick(object, click));
+						}
+					});
+				});
 			}
 		}
 	}

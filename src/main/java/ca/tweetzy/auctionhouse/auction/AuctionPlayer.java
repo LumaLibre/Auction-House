@@ -26,6 +26,7 @@ import ca.tweetzy.auctionhouse.auction.enums.AuctionSortType;
 import ca.tweetzy.auctionhouse.helpers.BundleUtil;
 import ca.tweetzy.auctionhouse.settings.Settings;
 import ca.tweetzy.auctionhouse.transaction.TransactionViewFilter;
+import ca.tweetzy.flight.folialib.wrapper.task.WrappedTask;
 import ca.tweetzy.flight.utils.PlayerUtil;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -33,6 +34,7 @@ import lombok.Setter;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 
@@ -65,7 +67,7 @@ public class AuctionPlayer {
 	private long lastListedItem;
 
 	private ItemStack itemBeingListed;
-	private int assignedTaskId;
+	private @Nullable WrappedTask assignedTask;
 
 	private long endAllRequestTime;
 	private AbstractCurrency selectedCurrencyFilter;
@@ -85,7 +87,7 @@ public class AuctionPlayer {
 				true,
 				-1,
 				null,
-				-1,
+				null,
 				-1,
 				AuctionHouse.getCurrencyManager().getAllCurrency()
 		);

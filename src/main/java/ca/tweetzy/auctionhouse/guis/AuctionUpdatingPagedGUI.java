@@ -21,6 +21,7 @@ package ca.tweetzy.auctionhouse.guis;
 import ca.tweetzy.auctionhouse.AuctionHouse;
 import ca.tweetzy.auctionhouse.settings.Settings;
 import ca.tweetzy.flight.comp.enums.CompSound;
+import ca.tweetzy.flight.folialib.wrapper.task.WrappedTask;
 import ca.tweetzy.flight.gui.Gui;
 import ca.tweetzy.flight.gui.events.GuiClickEvent;
 import ca.tweetzy.flight.gui.template.BaseGUI;
@@ -28,10 +29,8 @@ import ca.tweetzy.flight.hooks.PlaceholderAPIHook;
 import ca.tweetzy.flight.utils.QuickItem;
 import lombok.Getter;
 import lombok.NonNull;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.scheduler.BukkitTask;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -46,7 +45,7 @@ public abstract class AuctionUpdatingPagedGUI<T> extends BaseGUI {
 	protected final Gui parent;
 	protected List<T> items;
 	protected final int updateDelay;
-	protected BukkitTask task;
+	protected WrappedTask task;
 
 	public AuctionUpdatingPagedGUI(final Gui parent, @NonNull final Player player, @NonNull final String title, final int rows, int updateDelay, @NonNull final List<T> items) {
 		super(parent, PlaceholderAPIHook.tryReplace(player, title), rows);
@@ -87,14 +86,14 @@ public abstract class AuctionUpdatingPagedGUI<T> extends BaseGUI {
 			}
 		}
 		
-		this.task = Bukkit.getServer().getScheduler().runTaskTimerAsynchronously(AuctionHouse.getInstance(), () -> {
+		this.task = AuctionHouse.getInstance().getScheduler().runTimerAsync(() -> {
 //			this.fillSlots().forEach(slot -> setItem(slot, getDefaultItem()));
 			 draw();
 		}, 0L, updateDelay);
 		
 		// Debug logging
 		if (AuctionHouse.isDebugMode()) {
-			AuctionHouse.getInstance().getLogger().info("[AuctionUpdatingPagedGUI] Started update task for " + this.getClass().getSimpleName() + " (player: " + this.player.getName() + ", task ID: " + this.task.getTaskId() + ", delay: " + this.updateDelay + " ticks)");
+			AuctionHouse.getInstance().getLogger().info("[AuctionUpdatingPagedGUI] Started update task for " + this.getClass().getSimpleName() + " (player: " + this.player.getName() + ", task ID: " + this.task.hashCode() + ", delay: " + this.updateDelay + " ticks)");
 		}
 	}
 
@@ -117,7 +116,7 @@ public abstract class AuctionUpdatingPagedGUI<T> extends BaseGUI {
 
 	protected void cancelTask() {
 		if (this.task != null && !this.task.isCancelled()) {
-			int taskId = this.task.getTaskId();
+			int taskId = this.task.hashCode();
 			this.task.cancel();
 			this.task = null; // Clear reference to prevent memory leaks
 			// Debug logging
@@ -154,7 +153,7 @@ public abstract class AuctionUpdatingPagedGUI<T> extends BaseGUI {
 	private void populateItems() {
 		if (this.items != null) {
 			// Do all heavy work async, then update GUI on main thread
-			AuctionHouse.newChain().asyncFirst(() -> {
+			AuctionHouse.getInstance().getScheduler().runAsync((a) -> {
 				// Heavy operations on async thread:
 				// - prePopulate() might do filtering/sorting
 				// - Stream operations for pagination
@@ -179,55 +178,57 @@ public abstract class AuctionUpdatingPagedGUI<T> extends BaseGUI {
 				}
 				
 				// Return both maps as a pair
-				return new Object[] { slotToItemStack, slotToObject };
-			}).asyncLast((result) -> {
-				@SuppressWarnings("unchecked")
-				final Map<Integer, ItemStack> slotToItemStack = (Map<Integer, ItemStack>) ((Object[]) result)[0];
-				@SuppressWarnings("unchecked")
-				final Map<Integer, T> slotToObject = (Map<Integer, T>) ((Object[]) result)[1];
-				
-				// All GUI operations on main thread (required for Bukkit API)
-				// Calculate pages
-				pages = (int) Math.max(1, Math.ceil(this.items.size() / (double) this.fillSlots().size()));
-				
-				// Clear fill slots
-				this.fillSlots().forEach(slot -> setItem(slot, getDefaultItem()));
+				var result = new Object[] { slotToItemStack, slotToObject };
 
-				// Set up navigation buttons
-				// Only show previous button if not on first page
-				if (this.page > 1) {
-					setButton(getPreviousButtonSlot(), getPreviousButton(), click -> {
-						prevPage();
-						draw();
-					});
-				} else {
-					// Lock slot and remove click handlers when button is hidden
-					setUnlocked(getPreviousButtonSlot(), false);
-					setConditional(getPreviousButtonSlot(), null, null);
-					setItem(getPreviousButtonSlot(), getDefaultItem());
-				}
-				
-				// Only show next button if not on last page
-				if (this.page < pages) {
-					setButton(getNextButtonSlot(), getNextButton(), click -> {
-						nextPage();
-						draw();
-					});
-				} else {
-					// Lock slot and remove click handlers when button is hidden
-					setUnlocked(getNextButtonSlot(), false);
-					setConditional(getNextButtonSlot(), null, null);
-					setItem(getNextButtonSlot(), getDefaultItem());
-				}
+				AuctionHouse.getInstance().getScheduler().runAtEntity(player, (t) -> {
+					@SuppressWarnings("unchecked")
+					final Map<Integer, ItemStack> slotToItemStackSync = (Map<Integer, ItemStack>) ((Object[]) result)[0];
+					@SuppressWarnings("unchecked")
+					final Map<Integer, T> slotToObjectSync = (Map<Integer, T>) ((Object[]) result)[1];
 
-				// Set items for current page using pre-built ItemStacks
-				for (Map.Entry<Integer, ItemStack> entry : slotToItemStack.entrySet()) {
-					final int slot = entry.getKey();
-					final ItemStack itemStack = entry.getValue();
-					final T object = slotToObject.get(slot);
-					setButton(slot, itemStack, click -> this.onClick(object, click));
-				}
-			}).execute();
+					// All GUI operations on main thread (required for Bukkit API)
+					// Calculate pages
+					pages = (int) Math.max(1, Math.ceil(this.items.size() / (double) this.fillSlots().size()));
+
+					// Clear fill slots
+					this.fillSlots().forEach(slot -> setItem(slot, getDefaultItem()));
+
+					// Set up navigation buttons
+					// Only show previous button if not on first page
+					if (this.page > 1) {
+						setButton(getPreviousButtonSlot(), getPreviousButton(), click -> {
+							prevPage();
+							draw();
+						});
+					} else {
+						// Lock slot and remove click handlers when button is hidden
+						setUnlocked(getPreviousButtonSlot(), false);
+						setConditional(getPreviousButtonSlot(), null, null);
+						setItem(getPreviousButtonSlot(), getDefaultItem());
+					}
+
+					// Only show next button if not on last page
+					if (this.page < pages) {
+						setButton(getNextButtonSlot(), getNextButton(), click -> {
+							nextPage();
+							draw();
+						});
+					} else {
+						// Lock slot and remove click handlers when button is hidden
+						setUnlocked(getNextButtonSlot(), false);
+						setConditional(getNextButtonSlot(), null, null);
+						setItem(getNextButtonSlot(), getDefaultItem());
+					}
+
+					// Set items for current page using pre-built ItemStacks
+					for (Map.Entry<Integer, ItemStack> entry : slotToItemStackSync.entrySet()) {
+						final int slot = entry.getKey();
+						final ItemStack itemStack = entry.getValue();
+						final T object = slotToObjectSync.get(slot);
+						setButton(slot, itemStack, click -> this.onClick(object, click));
+					}
+				});
+			});
 		}
 	}
 

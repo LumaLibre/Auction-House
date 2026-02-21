@@ -417,18 +417,20 @@ public final class GUISellAuction extends AuctionBaseGUI {
 
 	private void performAuctionListing(GuiClickEvent click) {
 		AuctionCreator.create(this.auctionPlayer, createListingItem(), (originalListing, listingResult) -> {
-			if (listingResult != ListingResult.SUCCESS) {
-				click.player.closeInventory();
-				PlayerUtils.giveItem(click.player, originalListing.getItem());
-				this.auctionPlayer.setItemBeingListed(null);
-				return;
-			}
+			AuctionHouse.getInstance().getScheduler().runAtEntity(click.player, t -> {
+				if (listingResult != ListingResult.SUCCESS) {
+					click.player.closeInventory();
+					PlayerUtils.giveItem(click.player, originalListing.getItem());
+					this.auctionPlayer.setItemBeingListed(null);
+					return;
+				}
 
-			if (Settings.OPEN_MAIN_AUCTION_HOUSE_AFTER_MENU_LIST.getBoolean()) {
-				player.removeMetadata("AuctionHouseConfirmListing", AuctionHouse.getInstance());
-				click.manager.showGUI(click.player, new GUIAuctionHouse(this.auctionPlayer));
-			} else
-				AuctionHouse.newChain().sync(click.player::closeInventory).execute();
+				if (Settings.OPEN_MAIN_AUCTION_HOUSE_AFTER_MENU_LIST.getBoolean()) {
+					player.removeMetadata("AuctionHouseConfirmListing", AuctionHouse.getInstance());
+					click.manager.showGUI(click.player, new GUIAuctionHouse(this.auctionPlayer));
+				} else
+					click.player.closeInventory();
+			});
 		});
 	}
 

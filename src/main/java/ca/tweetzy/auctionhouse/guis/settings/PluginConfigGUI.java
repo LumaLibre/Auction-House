@@ -24,7 +24,7 @@ public final class PluginConfigGUI extends AuctionPagedGUI<Pair<String, MemoryCo
 
 	@Override
 	protected void prePopulate() {
-		this.items.add(new Pair<>(AuctionHouse.getInstance().getCoreConfig().getFile().getName(), AuctionHouse.getInstance().getCoreConfig()));
+		this.items.add(new Pair<>(AuctionHouse.getInstance().getTweetyCoreConfig().getFile().getName(), AuctionHouse.getInstance().getTweetyCoreConfig()));
 
 		List<Config> more = AuctionHouse.getInstance().getExtraConfig();
 		if (more != null && !more.isEmpty()) {

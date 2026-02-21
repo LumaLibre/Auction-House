@@ -53,25 +53,29 @@ public class CommandAuctionHouse extends Command {
 
 	@Override
 	protected ReturnType execute(CommandContext context) {
-		if (context.isPlayer()) {
-			Player player = context.getPlayer();
+		try {
+			if (context.isPlayer()) {
+				Player player = context.getPlayer();
 
-			if (CommandMiddleware.handle(player) == ReturnType.FAIL) return ReturnType.FAIL;
+				if (CommandMiddleware.handle(player) == ReturnType.FAIL) return ReturnType.FAIL;
 
-			if (AuctionHouse.getAuctionPlayerManager().getPlayer(player.getUniqueId()) == null) {
-				AuctionHouse.getInstance().getLocale().newMessage(Common.colorize("&cCould not find auction player instance for&f: &e" + player.getName() + "&c creating one now.")).sendPrefixedMessage(Bukkit.getConsoleSender());
-				AuctionHouse.getAuctionPlayerManager().addPlayer(new AuctionPlayer(player));
+				if (AuctionHouse.getAuctionPlayerManager().getPlayer(player.getUniqueId()) == null) {
+					AuctionHouse.getInstance().getLocale().newMessage(Common.colorize("&cCould not find auction player instance for&f: &e" + player.getName() + "&c creating one now.")).sendPrefixedMessage(Bukkit.getConsoleSender());
+					AuctionHouse.getAuctionPlayerManager().addPlayer(new AuctionPlayer(player));
+				}
+
+				if (context.getArgCount() == 0) {
+					AuctionHouse.getGuiManager().showGUI(player, new GUIAuctionHouse(AuctionHouse.getAuctionPlayerManager().getPlayer(player.getUniqueId())));
+					return ReturnType.SUCCESS;
+				}
+
+				if (context.getArgCount() == 1 && AuctionHouse.getCommandManager().getSubCommands("auctionhouse").stream().noneMatch(cmd -> cmd.equalsIgnoreCase(context.joinArgs(0).trim()))) {
+					if (context.getArg(0, "").equalsIgnoreCase("NaN")) return ReturnType.FAIL;
+					AuctionHouse.getGuiManager().showGUI(player, new GUIAuctionHouse(AuctionHouse.getAuctionPlayerManager().getPlayer(player.getUniqueId()), context.joinArgs(0).trim()));
+				}
 			}
-
-			if (context.getArgCount() == 0) {
-				AuctionHouse.getGuiManager().showGUI(player, new GUIAuctionHouse(AuctionHouse.getAuctionPlayerManager().getPlayer(player.getUniqueId())));
-				return ReturnType.SUCCESS;
-			}
-
-			if (context.getArgCount() == 1 && AuctionHouse.getCommandManager().getSubCommands("auctionhouse").stream().noneMatch(cmd -> cmd.equalsIgnoreCase(context.joinArgs(0).trim()))) {
-				if (context.getArg(0, "").equalsIgnoreCase("NaN")) return ReturnType.FAIL;
-				AuctionHouse.getGuiManager().showGUI(player, new GUIAuctionHouse(AuctionHouse.getAuctionPlayerManager().getPlayer(player.getUniqueId()), context.joinArgs(0).trim()));
-			}
+		} catch (Throwable t) {
+			t.printStackTrace();
 		}
 		return ReturnType.SUCCESS;
 	}

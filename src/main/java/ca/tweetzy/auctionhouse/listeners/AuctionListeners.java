@@ -77,7 +77,7 @@ public class AuctionListeners implements Listener {
 
 		if (Settings.DISCORD_ENABLED.getBoolean()) {
 
-			AuctionHouse.newChain().async(() -> {
+			AuctionHouse.getInstance().getScheduler().runAsync((t) -> {
 				Settings.DISCORD_WEBHOOKS.getStringList().forEach(hook -> {
 					final boolean isBid = e.getAuctionItem().isBidItem();
 
@@ -108,7 +108,7 @@ public class AuctionListeners implements Listener {
 						webhook.send();
 					}
 				});
-			}).execute();
+			});
 
 		}
 	}
@@ -168,7 +168,7 @@ public class AuctionListeners implements Listener {
 				final org.bukkit.inventory.ItemStack transactionItem = completedRequest.getRequestedItem().clone();
 				transactionItem.setAmount(1);
 
-				AuctionHouse.newChain().async(() -> {
+				AuctionHouse.getInstance().getScheduler().runAsync((t) -> {
 					final Transaction requestTransaction = new Transaction(
 							UUID.randomUUID(),
 							completedRequest.getFulfillerUUID(), // fulfiller is the seller
@@ -192,7 +192,7 @@ public class AuctionListeners implements Listener {
 							AuctionHouse.getTransactionManager().addTransaction(requestTransaction);
 						}
 					});
-				}).execute();
+				});
 			}
 		});
 	}
@@ -267,7 +267,7 @@ public class AuctionListeners implements Listener {
 		AuctionHouse.getListingManager().cancelListingWebhook(auctionedItem.getId());
 		new AuctionStatistic(buyerUUID, AuctionStatisticType.MONEY_SPENT, e.getSaleType() == AuctionSaleType.USED_BIDDING_SYSTEM ? auctionedItem.getCurrentPrice() : auctionedItem.getBasePrice()).store(null);
 
-		AuctionHouse.newChain().async(() -> {
+		AuctionHouse.getInstance().getScheduler().runAsync((t) -> {
 			if (Settings.RECORD_TRANSACTIONS.getBoolean()) {
 
 				double price = auctionedItem.getBasePrice();
@@ -324,7 +324,7 @@ public class AuctionListeners implements Listener {
 								.send();
 					});
 			}
-		}).execute();
+		});
 	}
 
 	@EventHandler
@@ -373,7 +373,7 @@ public class AuctionListeners implements Listener {
 		}
 
 		if (!Settings.DISCORD_ENABLED.getBoolean() && Settings.DISCORD_ALERT_ON_BID.getBoolean()) return;
-		AuctionHouse.newChain().async(() -> {
+		AuctionHouse.getInstance().getScheduler().runAsync((t) -> {
 			final AuctionedItem auctionedItem = e.getAuctionedItem();
 			Settings.DISCORD_WEBHOOKS.getStringList().forEach(hook -> {
 				DiscordMessageCreator
@@ -384,7 +384,7 @@ public class AuctionListeners implements Listener {
 						.listing(auctionedItem)
 						.send();
 			});
-		}).execute();
+		});
 	}
 
 	@EventHandler

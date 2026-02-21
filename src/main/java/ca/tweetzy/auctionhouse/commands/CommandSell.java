@@ -437,39 +437,44 @@ public final class CommandSell extends Command {
 			auctionPlayer.setItemBeingListed(auctionedItem.getItem());
 
 			AuctionHouse.getGuiManager().showGUI(player, new GUIListingConfirm(player, auctionedItem, result -> {
-				if (!result) {
-					AuctionHouse.getAuctionPlayerManager().processSell(player);
+				AuctionHouse.getInstance().getScheduler().runAtEntity(player, t -> {
+					if (!result) {
+						AuctionHouse.getAuctionPlayerManager().processSell(player);
 
-					player.closeInventory();
-					PlayerUtils.giveItem(player, auctionedItem.getCleanItem());
-					auctionPlayer.setItemBeingListed(null);
-					return;
-				}
+						player.closeInventory();
+						PlayerUtils.giveItem(player, auctionedItem.getCleanItem());
+						auctionPlayer.setItemBeingListed(null);
+						return;
+					}
+				});
+
 
 				/*
 				========================== DUPE TESTING	==========================
 				 */
 
-				Bukkit.getScheduler().runTaskLaterAsynchronously(AuctionHouse.getInstance(), () -> {
+				AuctionHouse.getInstance().getScheduler().runLaterAsync(() -> {
 					if (auctionPlayer.getPlayer() == null || !auctionPlayer.getPlayer().isOnline()) {
 						return;
 					}
 
 					AuctionCreator.create(auctionPlayer, auctionedItem, (auction, listingResult) -> {
-						AuctionHouse.getAuctionPlayerManager().processSell(player);
+						AuctionHouse.getInstance().getScheduler().runAtEntity(player, t -> {
+							AuctionHouse.getAuctionPlayerManager().processSell(player);
 
-						if (listingResult != ListingResult.SUCCESS) {
-							PlayerUtils.giveItem(player, auction.getCleanItem());
-							auctionPlayer.setItemBeingListed(null);
-							AuctionHouse.newChain().sync(player::closeInventory).execute();
-							return;
-						}
+							if (listingResult != ListingResult.SUCCESS) {
+								PlayerUtils.giveItem(player, auction.getCleanItem());
+								auctionPlayer.setItemBeingListed(null);
+								player.closeInventory();
+								return;
+							}
 
-						if (Settings.OPEN_MAIN_AUCTION_HOUSE_AFTER_MENU_LIST.getBoolean()) {
-							player.removeMetadata("AuctionHouseConfirmListing", AuctionHouse.getInstance());
-							AuctionHouse.getGuiManager().showGUI(player, new GUIAuctionHouse(auctionPlayer));
-						} else
-							AuctionHouse.newChain().sync(player::closeInventory).execute();
+							if (Settings.OPEN_MAIN_AUCTION_HOUSE_AFTER_MENU_LIST.getBoolean()) {
+								player.removeMetadata("AuctionHouseConfirmListing", AuctionHouse.getInstance());
+								AuctionHouse.getGuiManager().showGUI(player, new GUIAuctionHouse(auctionPlayer));
+							} else
+								player.closeInventory();
+						});
 					});
 
 				}, Settings.INTERNAL_CREATE_DELAY.getInt());
@@ -491,19 +496,21 @@ public final class CommandSell extends Command {
 			}
 
 			AuctionCreator.create(auctionPlayer, auctionedItem, (auction, listingResult) -> {
-				AuctionHouse.getAuctionPlayerManager().processSell(player);
+				AuctionHouse.getInstance().getScheduler().runAtEntity(player, t -> {
+					AuctionHouse.getAuctionPlayerManager().processSell(player);
 
-				if (listingResult != ListingResult.SUCCESS) {
-					PlayerUtils.giveItem(player, auction.getItem());
-					auctionPlayer.setItemBeingListed(null);
-					return;
-				}
+					if (listingResult != ListingResult.SUCCESS) {
+						PlayerUtils.giveItem(player, auction.getItem());
+						auctionPlayer.setItemBeingListed(null);
+						return;
+					}
 
-				if (Settings.OPEN_MAIN_AUCTION_HOUSE_AFTER_MENU_LIST.getBoolean()) {
-					player.removeMetadata("AuctionHouseConfirmListing", AuctionHouse.getInstance());
-					AuctionHouse.getGuiManager().showGUI(player, new GUIAuctionHouse(auctionPlayer));
-				} else
-					AuctionHouse.newChain().sync(player::closeInventory).execute();
+					if (Settings.OPEN_MAIN_AUCTION_HOUSE_AFTER_MENU_LIST.getBoolean()) {
+						player.removeMetadata("AuctionHouseConfirmListing", AuctionHouse.getInstance());
+						AuctionHouse.getGuiManager().showGUI(player, new GUIAuctionHouse(auctionPlayer));
+					} else
+						player.closeInventory();
+				});
 			});
 
 		}

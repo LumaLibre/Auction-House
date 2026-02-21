@@ -203,13 +203,15 @@ public final class GUIRequestItem extends AuctionBaseGUI {
 			}
 
 			AuctionCreator.create(auctionPlayer, auctionedItem, (auction, listingResult) -> {
-				AuctionHouse.getInstance().getAuctionPlayerManager().processSell(player);
+				AuctionHouse.getInstance().getScheduler().runAtEntity(click.player, (t) -> {
+					AuctionHouse.getInstance().getAuctionPlayerManager().processSell(player);
 
-				if (Settings.OPEN_MAIN_AUCTION_HOUSE_AFTER_MENU_LIST.getBoolean()) {
-					player.removeMetadata("AuctionHouseConfirmListing", AuctionHouse.getInstance());
-					AuctionHouse.getInstance().getGuiManager().showGUI(player, new GUIAuctionHouse(auctionPlayer));
-				} else
-					AuctionHouse.newChain().sync(player::closeInventory).execute();
+					if (Settings.OPEN_MAIN_AUCTION_HOUSE_AFTER_MENU_LIST.getBoolean()) {
+						player.removeMetadata("AuctionHouseConfirmListing", AuctionHouse.getInstance());
+						AuctionHouse.getInstance().getGuiManager().showGUI(player, new GUIAuctionHouse(auctionPlayer));
+					} else
+						player.closeInventory();
+				});
 			});
 		});
 	}

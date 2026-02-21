@@ -29,6 +29,7 @@ import ca.tweetzy.auctionhouse.settings.Settings;
 import ca.tweetzy.core.utils.PlayerUtils;
 import ca.tweetzy.flight.comp.enums.CompMaterial;
 import ca.tweetzy.flight.comp.enums.ServerVersion;
+import ca.tweetzy.flight.folialib.wrapper.task.WrappedTask;
 import ca.tweetzy.flight.nbtapi.NBT;
 import ca.tweetzy.flight.utils.Common;
 import ca.tweetzy.flight.utils.PlayerUtil;
@@ -71,7 +72,8 @@ public class PlayerListeners implements Listener {
 
 		if (auctionPlayer != null) {
 			// task id cancel
-			Bukkit.getServer().getScheduler().cancelTask(auctionPlayer.getAssignedTaskId());
+			WrappedTask assignedTask = auctionPlayer.getAssignedTask();
+			if (assignedTask != null) assignedTask.cancel();
 
 			if (auctionPlayer.getItemBeingListed() != null && player.getLocation().getWorld() != null) {
 				if (!AuctionHouse.getAuctionPlayerManager().isInSellProcess(player)) {
@@ -100,28 +102,31 @@ public class PlayerListeners implements Listener {
 		Titles.sendTitle(player, 1, 1, 1, " ", " ");
 
 		// DUPE TRACKING
-		AuctionHouse.newChain().async(() -> {
-			for (ItemStack item : player.getInventory().getStorageContents()) {
+		ItemStack[] inventory =  player.getInventory().getStorageContents();
+		AuctionHouse.getInstance().getScheduler().runAsync((a) -> {
+			for (ItemStack item : inventory) {
 				if (item == null || item.getType() == CompMaterial.AIR.get() || item.getAmount() == 0) continue;
 
 				final UUID auctionItemId = NBT.get(item, nbt -> (UUID) nbt.getUUID("AuctionDupeTracking"));
 				if (auctionItemId == null) continue;
 
 				if (AuctionHouse.getAuctionItemManager().getItem(auctionItemId) != null) {
-					player.getInventory().remove(item);
-					Bukkit.getServer().getConsoleSender().sendMessage(Common.colorize("&8[&eAuctionHouse&8] &CRemoving duped item from " + player.getName() + "'s inventory!"));
+					AuctionHouse.getInstance().getScheduler().runAtEntity(player, (t) -> {
+						player.getInventory().remove(item);
+						Bukkit.getServer().getConsoleSender().sendMessage(Common.colorize("&8[&eAuctionHouse&8] &CRemoving duped item from " + player.getName() + "'s inventory!"));
+					});
 				}
 			}
-		}).execute();
+		});
 
-		Bukkit.getServer().getScheduler().runTaskLaterAsynchronously(AuctionHouse.getInstance(), () -> {
+		AuctionHouse.getInstance().getScheduler().runLaterAsync(() -> {
 			if (Settings.UPDATE_CHECKER.getBoolean() && instance.getStatus() == UpdateChecker.UpdateStatus.UNRELEASED_VERSION && player.isOp()) {
 				instance.getLocale().newMessage(Common.colorize(String.format("&dYou're running an unreleased version of Auction House &f(&c%s&f)", instance.getDescription().getVersion()))).sendPrefixedMessage(player);
 			}
 		}, 20);
 
 		// Deliver queued offline notifications after a short delay so DB is ready
-		Bukkit.getServer().getScheduler().runTaskLater(AuctionHouse.getInstance(), () -> {
+		AuctionHouse.getInstance().getScheduler().runLaterAsync(() -> {
 			AuctionHouse.getNotificationManager().deliverTo(player);
 		}, 50);
 	}

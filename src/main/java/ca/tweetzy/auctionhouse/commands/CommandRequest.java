@@ -168,7 +168,7 @@ public class CommandRequest extends Command {
 				player.removeMetadata("AuctionHouseConfirmListing", AuctionHouse.getInstance());
 				AuctionHouse.getGuiManager().showGUI(player, new GUIAuctionHouse(auctionPlayer));
 			} else
-				AuctionHouse.newChain().sync(player::closeInventory).execute();
+				AuctionHouse.getInstance().getScheduler().runAtEntity(player, t -> player.closeInventory());
 		});
 
 		return ReturnType.SUCCESS;

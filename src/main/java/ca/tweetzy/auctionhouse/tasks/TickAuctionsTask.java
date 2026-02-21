@@ -32,7 +32,6 @@ import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.HashMap;
 import java.util.Iterator;
@@ -47,7 +46,7 @@ import java.util.stream.Collectors;
  * Time Created: 8:47 p.m.
  * Usage of any code found within this class is prohibited unless given explicit permission otherwise
  */
-public class TickAuctionsTask extends BukkitRunnable {
+public class TickAuctionsTask implements Runnable {
 
 	private static TickAuctionsTask instance;
 	private static long clock;
@@ -57,7 +56,7 @@ public class TickAuctionsTask extends BukkitRunnable {
 		if (instance == null) {
 			clock = 0L;
 			instance = new TickAuctionsTask();
-			instance.runTaskTimerAsynchronously(AuctionHouse.getInstance(), 0, (long) 20 * Settings.TICK_UPDATE_TIME.getInt());
+			AuctionHouse.getInstance().getScheduler().runTimerAsync(instance, 0, (long) 20 * Settings.TICK_UPDATE_TIME.getInt());
 		}
 		return instance;
 	}
@@ -219,7 +218,7 @@ public class TickAuctionsTask extends BukkitRunnable {
 
 					// handle full inventory
 					if (auctionWinner.getPlayer().getInventory().firstEmpty() != -1) {
-						Bukkit.getServer().getScheduler().runTaskLater(AuctionHouse.getInstance(), () -> PlayerUtils.giveItem(auctionWinner.getPlayer(), itemStack), 0);
+						AuctionHouse.getInstance().getScheduler().runAtEntityLater(auctionWinner.getPlayer(), () -> PlayerUtils.giveItem(auctionWinner.getPlayer(), itemStack), 0);
 						// Item already marked as purchased above (race condition protection)
 						// Skip expiration logic to prevent item from appearing in collection bin
 						continue;

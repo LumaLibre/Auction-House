@@ -51,6 +51,7 @@ public class CommandReload extends Command {
 		if (AuctionAPI.tellMigrationStatus(context.getSender())) return ReturnType.FAIL;
 		final AuctionHouse instance = AuctionHouse.getInstance();
 		instance.reloadConfig();
+		instance.onConfigReload();
 		instance.getLocale().newMessage(Common.colorize("&aReloaded files")).sendPrefixedMessage(context.getSender());
 		return ReturnType.SUCCESS;
 	}

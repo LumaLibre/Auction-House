@@ -60,7 +60,9 @@ public final class GUIBanUser extends AuctionBaseGUI {
 			AuctionHouse.getBanManager().registerBan(this.ban, created -> {
 				if (created) {
 					AuctionHouse.getInstance().getLocale().getMessage("ban.user banned").processPlaceholder("player_name", this.ban.locatePlayer().getName()).sendPrefixedMessage(click.player);
-					AuctionHouse.newChain().sync(click.gui::close).execute();
+					AuctionHouse.getInstance().getScheduler().runAtEntity(click.player, (t) -> {
+						click.gui.close();
+					});
 				}
 			});
 		});

@@ -22,7 +22,6 @@ import ca.tweetzy.auctionhouse.AuctionHouse;
 import ca.tweetzy.auctionhouse.settings.Settings;
 import ca.tweetzy.flight.utils.Common;
 import org.bukkit.Bukkit;
-import org.bukkit.scheduler.BukkitRunnable;
 
 /**
  * The current file has been created by Kiran Hart
@@ -30,14 +29,14 @@ import org.bukkit.scheduler.BukkitRunnable;
  * Time Created: 2:28 p.m.
  * Usage of any code found within this class is prohibited unless given explicit permission otherwise
  */
-public class AutoSaveTask extends BukkitRunnable {
+public class AutoSaveTask implements Runnable {
 
 	private static AutoSaveTask instance;
 
 	public static AutoSaveTask startTask() {
 		if (instance == null) {
 			instance = new AutoSaveTask();
-			instance.runTaskTimerAsynchronously(AuctionHouse.getInstance(), 20 * Settings.AUTO_SAVE_EVERY.getInt() , (long) 20 * Settings.AUTO_SAVE_EVERY.getInt());
+			AuctionHouse.getInstance().getScheduler().runTimerAsync(instance, 20L * Settings.AUTO_SAVE_EVERY.getInt() , 20L * Settings.AUTO_SAVE_EVERY.getInt());
 		}
 		return instance;
 	}

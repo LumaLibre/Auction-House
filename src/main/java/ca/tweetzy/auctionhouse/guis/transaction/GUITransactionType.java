@@ -114,7 +114,7 @@ public final class GUITransactionType extends AuctionBaseGUI {
 
 						final long ticks = AuctionAPI.toTicks(string);
 
-						AuctionHouse.newChain().async(() -> {
+						AuctionHouse.getInstance().getScheduler().runAsync((t) -> {
 							instance.getLocale().getMessage("general.transaction delete begin").sendPrefixedMessage(e.player);
 							List<UUID> toRemove = new ArrayList<>();
 
@@ -133,7 +133,7 @@ public final class GUITransactionType extends AuctionBaseGUI {
 
 							instance.getDataManager().deleteTransactions(toRemove);
 							instance.getLocale().getMessage("general.deleted transactions").processPlaceholder("deleted_transactions", toRemove.size()).sendPrefixedMessage(e.player);
-						}).execute();
+						});
 						return true;
 					}
 				};

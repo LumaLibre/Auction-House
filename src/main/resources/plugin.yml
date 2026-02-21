@@ -6,3 +6,4 @@ description: Auction House is a premium auction solution for your server.
 website: https://discord.gg/WTg4PhBHEg
 authors: [ Kiran Hart ]
 softdepend: [ Vault, PlayerPoints, PlaceholderAPI, MMOItemsHook, UltraEconomy, CMI, Essentials, ChestShop, EcoEnchants, EcoBits, Funds, CoinsEngine ]
+folia-supported: true

@@ -18,7 +18,9 @@
 
 package ca.tweetzy.auctionhouse.helpers;
 
+import ca.tweetzy.auctionhouse.AuctionHouse;
 import ca.tweetzy.core.TweetyPlugin;
+import ca.tweetzy.flight.FlightPlugin;
 import ca.tweetzy.flight.utils.Common;
 import org.bukkit.command.CommandSender;
 
@@ -44,7 +46,7 @@ public class UpdateChecker {
 	private UpdateStatus status = UpdateStatus.UNKNOWN;
 	final String API_URL = "https://api.spigotmc.org/legacy/update.php?resource=%d";
 
-	final TweetyPlugin plugin;
+	final AuctionHouse plugin;
 	final int SPIGOT_ID;
 	final CommandSender[] to;
 	private String latestVersion = "0.0.0";
@@ -125,7 +127,7 @@ public class UpdateChecker {
 		return this;
 	}
 
-	public UpdateChecker(TweetyPlugin plugin, int spigotID, CommandSender... to) {
+	public UpdateChecker(AuctionHouse plugin, int spigotID, CommandSender... to) {
 		this.plugin = plugin;
 		this.SPIGOT_ID = spigotID;
 		this.to = to;

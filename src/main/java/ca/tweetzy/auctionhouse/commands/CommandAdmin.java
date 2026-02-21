@@ -82,7 +82,7 @@ public class CommandAdmin extends Command {
 
 				AuctionHouse.getDataManager().getAdminLogs((error, logs) -> {
 					if (error == null)
-						AuctionHouse.newChain().sync(() -> AuctionHouse.getGuiManager().showGUI(player, new GUIAdminLogs(player, logs))).execute();
+						AuctionHouse.getInstance().getScheduler().runAtEntity(player, (t) -> AuctionHouse.getGuiManager().showGUI(player, new GUIAdminLogs(player, logs)));
 					else
 						error.printStackTrace();
 				});

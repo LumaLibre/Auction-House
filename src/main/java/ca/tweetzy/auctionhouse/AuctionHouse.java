@@ -37,9 +37,10 @@ import ca.tweetzy.auctionhouse.settings.v3.Translations;
 import ca.tweetzy.auctionhouse.tasks.AutoSaveTask;
 import ca.tweetzy.auctionhouse.tasks.TickAuctionsTask;
 import ca.tweetzy.core.TweetyCore;
-import ca.tweetzy.core.TweetyPlugin;
 import ca.tweetzy.core.configuration.Config;
+import ca.tweetzy.core.locale.Locale;
 import ca.tweetzy.core.utils.Metrics;
+import ca.tweetzy.flight.FlightPlugin;
 import ca.tweetzy.flight.command.CommandManager;
 import ca.tweetzy.flight.comp.enums.ServerProject;
 import ca.tweetzy.flight.comp.enums.ServerVersion;
@@ -47,13 +48,11 @@ import ca.tweetzy.flight.config.tweetzy.TweetzyYamlConfig;
 import ca.tweetzy.flight.database.*;
 import ca.tweetzy.flight.gui.GuiManager;
 import ca.tweetzy.flight.utils.Common;
-import co.aikar.taskchain.BukkitTaskChainFactory;
-import co.aikar.taskchain.TaskChain;
-import co.aikar.taskchain.TaskChainFactory;
 import lombok.Getter;
 import lombok.Setter;
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.Bukkit;
+import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.RegisteredServiceProvider;
@@ -73,7 +72,7 @@ import java.util.stream.Collectors;
  * Usage of any code found within this class is prohibited unless given explicit permission otherwise
  */
 
-public class AuctionHouse extends TweetyPlugin {
+public class AuctionHouse extends FlightPlugin {
 
 	//==========================================================================//
 	// "v3" stuff for organization
@@ -85,6 +84,23 @@ public class AuctionHouse extends TweetyPlugin {
 	@Getter
 	@Setter
 	private static boolean debugMode = false;
+
+	// TweetyPlugin components that I have to reuse
+	@Getter
+    private Locale locale = new Locale(this, "en_US");
+	private Config config = new Config(this);
+
+    public void setLocale(String locale) {
+		this.locale = new Locale(this, locale);
+	}
+
+	public Config getTweetyCoreConfig() {
+		return config;
+	}
+
+	public CommandSender getConsole() {
+		return Bukkit.getConsoleSender();
+	}
 
 	private DatabaseConnector databaseConnector;
 	private DataManager dataManager;
@@ -119,8 +135,6 @@ public class AuctionHouse extends TweetyPlugin {
 
 	//==========================================================================//
 
-	private static TaskChainFactory taskChainFactory;
-
 	@Getter
 	@Setter
 	private boolean migrating = false;
@@ -131,7 +145,7 @@ public class AuctionHouse extends TweetyPlugin {
 	private UpdateChecker.UpdateStatus status;
 
 	@Override
-	public void onPluginEnable() {
+	public void onFlight() {
 		TweetyCore.registerPlugin(this, 1, "CHEST");
 
 		if (ServerVersion.isServerVersionAtOrBelow(ServerVersion.V1_7)) {
@@ -140,7 +154,6 @@ public class AuctionHouse extends TweetyPlugin {
 		}
 
 		API = new AuctionAPI();
-		taskChainFactory = BukkitTaskChainFactory.create(this);
 		migrationCoreConfig = new TweetzyYamlConfig(this, "migration-config-dont-touch.yml");
 
 		// Settings & Locale
@@ -303,13 +316,13 @@ public class AuctionHouse extends TweetyPlugin {
 
 		// update check
 		if (Settings.UPDATE_CHECKER.getBoolean() && ServerProject.getServerVersion() != ServerProject.UNKNOWN)
-			getServer().getScheduler().runTaskLaterAsynchronously(this, () -> this.status = new UpdateChecker(this, 60325, getConsole()).check().getStatus(), 1L);
+			getScheduler().runLaterAsync(() -> this.status = new UpdateChecker(this, 60325, getConsole()).check().getStatus(), 1L);
 
 		// metrics
 		this.metrics = new Metrics(this, 6806);
 		this.metrics.addCustomChart(new Metrics.SimplePie("using_mysql", () -> String.valueOf(Settings.DATABASE_USE.getBoolean())));
 
-		getServer().getScheduler().runTaskLater(this, () -> {
+		getScheduler().runLater(() -> {
 			if (!ServerProject.isServer(ServerProject.SPIGOT, ServerProject.PAPER)) {
 				getLogger().warning("You're running Auction House on a non supported server jar, although small, there's a chance somethings will not work or just entirely break.");
 
@@ -349,7 +362,7 @@ public class AuctionHouse extends TweetyPlugin {
 	}
 
 	@Override
-	public void onPluginDisable() {
+	public void onSleep() {
 		// Shutdown transaction logger
 		if (this.transactionLogger != null) {
 			this.transactionLogger.stop();
@@ -366,12 +379,12 @@ public class AuctionHouse extends TweetyPlugin {
 			shutdownDataManager(this.dataManager, 3, 15);
 		}
 
-		getServer().getScheduler().cancelTasks(this);
+		getScheduler().cancelAllTasks();
 		// send out remaining webhooks
 //		this.listingManager.sendPendingDiscordWebhooks();
 	}
 
-	@Override
+
 	public void onConfigReload() {
 		Settings.setup();
 		setLocale(Settings.LANG.getString());
@@ -379,20 +392,14 @@ public class AuctionHouse extends TweetyPlugin {
 	}
 
 	//========================================== Getters ==========================================
-	public static <T> TaskChain<T> newChain() {
-		return taskChainFactory.newChain();
-	}
-
-	public static <T> TaskChain<T> newSharedChain(String name) {
-		return taskChainFactory.newSharedChain(name);
-	}
 
 	public static AuctionHouse getInstance() {
-		return (AuctionHouse) TweetyPlugin.getInstance();
+		return (AuctionHouse) FlightPlugin.getInstance();
 	}
 
 	@Override
-	public void onPluginLoad() {
+	public void onWake() {
+
 	}
 
 	public static AuctionHouseAPI getAPI() {
@@ -488,7 +495,6 @@ public class AuctionHouse extends TweetyPlugin {
 	}
 
 	//========================================== LEGACY ==========================================
-	@Override
 	public List<Config> getExtraConfig() {
 		return null;
 	}

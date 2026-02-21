@@ -73,7 +73,7 @@ public final class BanManager extends KeyValueManager<UUID, Ban> {
 			if (storedBan != null) {
 				add(storedBan.getId(), storedBan);
 				// call event
-				AuctionHouse.newChain().sync(() -> Bukkit.getPluginManager().callEvent(banPlayerEvent)).execute();
+				AuctionHouse.getInstance().getScheduler().runNextTick((t) -> Bukkit.getPluginManager().callEvent(banPlayerEvent));
 
 				if (created != null)
 					created.accept(true);

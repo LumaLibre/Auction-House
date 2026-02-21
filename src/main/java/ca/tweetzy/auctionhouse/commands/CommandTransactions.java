@@ -72,7 +72,7 @@ public class CommandTransactions extends Command {
 		if (context.getArgCount() == 2 && context.getArg(0, "").equalsIgnoreCase("search")) {
 			final Player target = PlayerUtils.findPlayer(context.getArg(1));
 
-			AuctionHouse.newChain().async(() -> {
+			AuctionHouse.getInstance().getScheduler().runAsync((t) -> {
 				OfflinePlayer offlinePlayer = null;
 
 				if (target == null) {
@@ -87,7 +87,7 @@ public class CommandTransactions extends Command {
 				UUID toLookup = target == null ? offlinePlayer.getUniqueId() : target.getUniqueId();
 				AuctionHouse.getGuiManager().showGUI(player, new GUITransactionList(player, toLookup));
 
-			}).execute();
+			});
 
 		}
 
