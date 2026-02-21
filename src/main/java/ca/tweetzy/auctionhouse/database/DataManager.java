@@ -55,6 +55,7 @@ import java.time.Instant;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.logging.Level;
+import java.util.stream.Collectors;
 
 /**
  * The current file has been created by Kiran Hart
@@ -666,39 +667,37 @@ public class DataManager extends DataManagerAbstract {
 
 	public void getAdminLogs(Callback<ArrayList<AuctionAdminLog>> callback) {
 		this.runAsync(() -> {
-			this.databaseConnector.connect(connection -> {
-				try {
-					getQueryBuilder().select("admin_logs")
-							.fetchResultSet(resultSet -> {
-								ArrayList<AuctionAdminLog> logs = new ArrayList<>();
-								try {
-									while (resultSet.next()) {
-										final AuctionAdminLog log = extractAdminLog(resultSet);
-										if (log == null || log.getItem() == null || log.getItem().getType() == CompMaterial.AIR.get()) continue;
+			try {
+				getQueryBuilder().select("admin_logs")
+						.fetchResultSet(resultSet -> {
+							ArrayList<AuctionAdminLog> logs = new ArrayList<>();
+							try {
+								while (resultSet.next()) {
+									final AuctionAdminLog log = extractAdminLog(resultSet);
+									if (log == null || log.getItem() == null || log.getItem().getType() == CompMaterial.AIR.get()) continue;
 
-										if (resultSet.getInt("serialize_version") == 0) {
-											try {
-												String possible = QuickItem.toString(log.getItem());
-												getQueryBuilder().update("admin_logs")
-														.set("serialize_version", 1)
-														.set("itemstack", possible)
-														.where("id", resultSet.getInt("id"))
-														.execute(null);
-											} catch (NbtApiException ignored) {
-											}
+									if (resultSet.getInt("serialize_version") == 0) {
+										try {
+											String possible = QuickItem.toString(log.getItem());
+											getQueryBuilder().update("admin_logs")
+													.set("serialize_version", 1)
+													.set("itemstack", possible)
+													.where("id", resultSet.getInt("id"))
+													.execute(null);
+										} catch (NbtApiException ignored) {
 										}
-
-										logs.add(log);
 									}
-									callback.accept(null, logs);
-								} catch (SQLException e) {
-									resolveCallback(callback, e);
+
+									logs.add(log);
 								}
-							});
-				} catch (Exception e) {
-					resolveCallback(callback, e);
-				}
-			});
+								callback.accept(null, logs);
+							} catch (SQLException e) {
+								resolveCallback(callback, e);
+							}
+						});
+			} catch (Exception e) {
+				resolveCallback(callback, e);
+			}
 		});
 	}
 
@@ -1083,39 +1082,37 @@ public class DataManager extends DataManagerAbstract {
 
 	public void getListingPriceLimits(Callback<ArrayList<ListingPriceLimit>> callback) {
 		this.runAsync(() -> {
-			this.databaseConnector.connect(connection -> {
-				try {
-					getQueryBuilder().select("listing_prices")
-							.fetchResultSet(resultSet -> {
-								ArrayList<ListingPriceLimit> listingPriceLimits = new ArrayList<>();
-								try {
-									while (resultSet.next()) {
-										final ListingPriceLimit listingPrice = extractListingPriceLimit(resultSet);
-										if (listingPrice == null || listingPrice.getItem() == null || listingPrice.getItem().getType() == CompMaterial.AIR.get()) continue;
+			try {
+				getQueryBuilder().select("listing_prices")
+						.fetchResultSet(resultSet -> {
+							ArrayList<ListingPriceLimit> listingPriceLimits = new ArrayList<>();
+							try {
+								while (resultSet.next()) {
+									final ListingPriceLimit listingPrice = extractListingPriceLimit(resultSet);
+									if (listingPrice == null || listingPrice.getItem() == null || listingPrice.getItem().getType() == CompMaterial.AIR.get()) continue;
 
-										if (resultSet.getInt("serialize_version") == 0) {
-											try {
-												String possible = QuickItem.toString(listingPrice.getItem());
-												getQueryBuilder().update("listing_prices")
-														.set("serialize_version", 1)
-														.set("itemstack", possible)
-														.where("id", resultSet.getString("id"))
-														.execute(null);
-											} catch (NbtApiException ignored) {
-											}
+									if (resultSet.getInt("serialize_version") == 0) {
+										try {
+											String possible = QuickItem.toString(listingPrice.getItem());
+											getQueryBuilder().update("listing_prices")
+													.set("serialize_version", 1)
+													.set("itemstack", possible)
+													.where("id", resultSet.getString("id"))
+													.execute(null);
+										} catch (NbtApiException ignored) {
 										}
-
-										listingPriceLimits.add(listingPrice);
 									}
-									callback.accept(null, listingPriceLimits);
-								} catch (SQLException e) {
-									resolveCallback(callback, e);
+
+									listingPriceLimits.add(listingPrice);
 								}
-							});
-				} catch (Exception e) {
-					resolveCallback(callback, e);
-				}
-			});
+								callback.accept(null, listingPriceLimits);
+							} catch (SQLException e) {
+								resolveCallback(callback, e);
+							}
+						});
+			} catch (Exception e) {
+				resolveCallback(callback, e);
+			}
 		});
 	}
 
@@ -1324,42 +1321,215 @@ public class DataManager extends DataManagerAbstract {
 		});
 	}
 
+	// ======================== Watchlist ======================== //
+
+	private record WatchlistEntry(UUID playerUuid, UUID listingId) {}
+
+	public void getWatchlistEntries(Callback<HashMap<UUID, HashSet<UUID>>> callback) {
+		this.runAsync(() -> {
+			getQueryBuilder().select("watchlist")
+					.fetch(rs -> {
+						try {
+							return new WatchlistEntry(
+									UUID.fromString(rs.getString("player_uuid")),
+									UUID.fromString(rs.getString("listing_id")));
+						} catch (SQLException e) {
+							return null;
+						}
+					}, (ex, results) -> {
+						if (ex != null) {
+							resolveCallback(callback, ex);
+							return;
+						}
+						HashMap<UUID, HashSet<UUID>> map = new HashMap<>();
+						if (results != null) {
+							for (WatchlistEntry entry : results) {
+								if (entry != null) {
+									map.computeIfAbsent(entry.playerUuid(), k -> new HashSet<>()).add(entry.listingId());
+								}
+							}
+						}
+						if (callback != null) {
+							callback.accept(null, map);
+						}
+					});
+		});
+	}
+
+	public void addWatchlistEntry(UUID playerUuid, UUID listingId, Callback<Boolean> callback) {
+		this.runAsync(() -> {
+			try {
+				getQueryBuilder().insert("watchlist")
+						.set("player_uuid", playerUuid.toString())
+						.set("listing_id", listingId.toString())
+						.set("created_at", System.currentTimeMillis())
+						.execute((ex, affectedRows) -> {
+							if (ex != null) {
+								resolveCallback(callback, ex);
+								return;
+							}
+							if (callback != null) {
+								callback.accept(null, affectedRows != null && affectedRows > 0);
+							}
+						});
+			} catch (Exception e) {
+				resolveCallback(callback, e);
+			}
+		});
+	}
+
+	public void removeWatchlistEntry(UUID playerUuid, UUID listingId, Callback<Boolean> callback) {
+		this.runAsync(() -> {
+			getQueryBuilder().delete("watchlist")
+					.where("player_uuid", playerUuid.toString())
+					.where("listing_id", listingId.toString())
+					.execute((ex, affectedRows) -> {
+						if (ex != null) {
+							resolveCallback(callback, ex);
+							return;
+						}
+						if (callback != null) {
+							callback.accept(null, affectedRows != null && affectedRows > 0);
+						}
+					});
+		});
+	}
+
+	public void removeWatchlistEntriesForListing(UUID listingId, Callback<Void> callback) {
+		this.runAsync(() -> {
+			getQueryBuilder().delete("watchlist")
+					.where("listing_id", listingId.toString())
+					.execute((ex, affectedRows) -> {
+						if (ex != null && callback != null) {
+							resolveCallback(callback, ex);
+							return;
+						}
+						if (callback != null) {
+							callback.accept(null, null);
+						}
+					});
+		});
+	}
+
+	// ======================== Offline Notifications ======================== //
+
+	public void insertNotification(UUID id, UUID playerUuid, String messageKey, String placeholderDataJson, Callback<Boolean> callback) {
+		this.runAsync(() -> {
+			try {
+				getQueryBuilder().insert("notifications")
+						.set("id", id.toString())
+						.set("player_uuid", playerUuid.toString())
+						.set("message_key", messageKey)
+						.set("placeholder_data", placeholderDataJson != null ? placeholderDataJson : "")
+						.set("created_at", System.currentTimeMillis())
+						.execute((ex, affectedRows) -> {
+							if (ex != null) {
+								resolveCallback(callback, ex);
+								return;
+							}
+							if (callback != null) {
+								callback.accept(null, affectedRows != null && affectedRows > 0);
+							}
+						});
+			} catch (Exception e) {
+				resolveCallback(callback, e);
+			}
+		});
+	}
+
+	public void getNotificationsForPlayer(UUID playerUuid, Callback<List<QueuedNotification>> callback) {
+		this.runAsync(() -> {
+			getQueryBuilder().select("notifications")
+					.where("player_uuid", playerUuid.toString())
+					.orderBy("created_at")
+					.fetch(rs -> {
+						try {
+							return extractQueuedNotification(rs);
+						} catch (SQLException e) {
+							return null;
+						}
+					}, (ex, results) -> {
+						if (ex != null) {
+							resolveCallback(callback, ex);
+							return;
+						}
+						if (callback != null) {
+							List<QueuedNotification> list = results != null
+									? results.stream().filter(Objects::nonNull).collect(Collectors.toList())
+									: new ArrayList<>();
+							callback.accept(null, list);
+						}
+					});
+		});
+	}
+
+	public void deleteNotifications(Collection<UUID> ids, Callback<Boolean> callback) {
+		if (ids == null || ids.isEmpty()) {
+			if (callback != null) callback.accept(null, true);
+			return;
+		}
+		this.runAsync(() -> this.databaseConnector.connect(connection -> {
+			try {
+				try (PreparedStatement statement = connection.prepareStatement("DELETE FROM " + this.getTablePrefix() + "notifications WHERE id = ?")) {
+					for (UUID id : ids) {
+						statement.setString(1, id.toString());
+						statement.addBatch();
+					}
+					statement.executeBatch();
+				}
+				if (callback != null) {
+					callback.accept(null, true);
+				}
+			} catch (SQLException e) {
+				resolveCallback(callback, e);
+			}
+		}));
+	}
+
+	private QueuedNotification extractQueuedNotification(ResultSet rs) throws SQLException {
+		return new QueuedNotification(
+				UUID.fromString(rs.getString("id")),
+				UUID.fromString(rs.getString("player_uuid")),
+				rs.getString("message_key"),
+				rs.getString("placeholder_data"),
+				rs.getLong("created_at")
+		);
+	}
+
 	public void getAuctionPayments(Callback<ArrayList<AuctionPayment>> callback) {
 		this.runAsync(() -> {
-			this.databaseConnector.connect(connection -> {
-				try {
-					getQueryBuilder().select("payments")
-							.fetchResultSet(resultSet -> {
-								ArrayList<AuctionPayment> payments = new ArrayList<>();
-								try {
-									while (resultSet.next()) {
-										final AuctionPayment payment = extractAuctionPayment(resultSet);
-										if (payment == null || payment.getItem() == null || payment.getItem().getType() == CompMaterial.AIR.get()) continue;
+			try {
+				getQueryBuilder().select("payments")
+						.fetchResultSet(resultSet -> {
+							ArrayList<AuctionPayment> payments = new ArrayList<>();
+							try {
+								while (resultSet.next()) {
+									final AuctionPayment payment = extractAuctionPayment(resultSet);
+									if (payment == null || payment.getItem() == null || payment.getItem().getType() == CompMaterial.AIR.get()) continue;
 
-										if (resultSet.getInt("serialize_version") == 0) {
-											try {
-												String possible = QuickItem.toString(payment.getItem());
-												getQueryBuilder().update("payments")
-														.set("serialize_version", 1)
-														.set("itemstack", possible)
-														.where("uuid", resultSet.getString("uuid"))
-														.where("time", resultSet.getLong("time"))
-														.execute(null);
-											} catch (NbtApiException ignored) {
-											}
+									if (resultSet.getInt("serialize_version") == 0) {
+										try {
+											String possible = QuickItem.toString(payment.getItem());
+											getQueryBuilder().update("payments")
+													.set("serialize_version", 1)
+													.set("itemstack", possible)
+													.where("uuid", resultSet.getString("uuid"))
+													.where("time", resultSet.getLong("time"))
+													.execute(null);
+										} catch (NbtApiException ignored) {
 										}
-
-										payments.add(payment);
 									}
-									callback.accept(null, payments);
-								} catch (SQLException e) {
-									resolveCallback(callback, e);
+
+									payments.add(payment);
 								}
-							});
-				} catch (Exception e) {
-					resolveCallback(callback, e);
-				}
-			});
+								callback.accept(null, payments);
+							} catch (SQLException e) {
+								resolveCallback(callback, e);
+							}
+						});
+			} catch (Exception e) {
+				resolveCallback(callback, e);
+			}
 		});
 	}
 

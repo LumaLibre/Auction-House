@@ -3,6 +3,6 @@ version: '${version}'
 api-version: 1.13
 main: ca.tweetzy.auctionhouse.AuctionHouse
 description: Auction House is a premium auction solution for your server.
-website: https://discord.tweetzy.ca/
+website: https://discord.gg/WTg4PhBHEg
 authors: [ Kiran Hart ]
 softdepend: [ Vault, PlayerPoints, PlaceholderAPI, MMOItemsHook, UltraEconomy, CMI, Essentials, ChestShop, EcoEnchants, EcoBits, Funds, CoinsEngine ]

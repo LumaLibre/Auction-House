@@ -214,7 +214,7 @@ public class GUITransactionList extends AuctionPagedGUI<Transaction> {
 				}
 				return;
 			}
-
+ 
 			if (click.clickType == ClickType.valueOf(Settings.CLICKS_FILTER_TRANSACTION_BUY_TYPE.getString().toUpperCase()) && Settings.FILTER_CLICKS_TRANSACTION_BUY_TYPE_ENABLED.getBoolean()) {
 				this.auctionPlayer.setTransactionViewFilter(this.auctionPlayer.getTransactionViewFilter().next());
 				draw();
@@ -236,7 +236,6 @@ public class GUITransactionList extends AuctionPagedGUI<Transaction> {
 
 		return QuickItem
 				.of(item)
-				.amount(item.getAmount())
 				.name(Replacer.replaceVariables(Settings.GUI_TRANSACTIONS_ITEM_TRANSACTION_NAME.getString(), "item_name", AuctionAPI.getInstance().getItemName(item), "transaction_id", transaction.getId().toString()))
 				.lore(this.player, Replacer.replaceVariables(Settings.GUI_TRANSACTIONS_ITEM_TRANSACTION_LORE.getStringList(),
 						"transaction_id", transaction.getId().toString(),

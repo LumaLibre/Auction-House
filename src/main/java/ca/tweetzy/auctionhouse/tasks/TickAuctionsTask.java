@@ -34,6 +34,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
 
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
@@ -76,6 +77,7 @@ public class TickAuctionsTask extends BukkitRunnable {
 
 			if (AuctionHouse.getAuctionItemManager().getGarbageBin().containsKey(auctionItem.getId())) {
 				AuctionHouse.getAuctionItemManager().getGarbageBin().remove(auctionItem.getId());
+				AuctionHouse.getWatchlistManager().removeListing(auctionItem.getId());
 				AuctionHouse.getAuctionItemManager().getDeletedItems().put(auctionItem.getId(), auctionItem);
 				auctionItemIterator.remove();
 				continue;
@@ -166,18 +168,34 @@ public class TickAuctionsTask extends BukkitRunnable {
 				AuctionAPI.getInstance().depositBalance(Bukkit.getOfflinePlayer(auctionItem.getOwner()), Settings.TAX_CHARGE_SALES_TAX_TO_BUYER.getBoolean() ? finalPrice : finalPrice - tax, auctionItem.getItem(), auctionWinner, auctionItem);
 
 				// alert seller and buyer
-				if (Bukkit.getOfflinePlayer(auctionItem.getOwner()).isOnline()) {
+				OfflinePlayer auctionOwner = Bukkit.getOfflinePlayer(auctionItem.getOwner());
+				String itemName = AuctionAPI.getInstance().getItemName(itemStack);
+				String sellerPriceStr = AuctionHouse.getAPI().getFinalizedCurrencyNumber(Settings.TAX_CHARGE_SALES_TAX_TO_BUYER.getBoolean() ? finalPrice : finalPrice - tax, auctionItem.getCurrency(), auctionItem.getCurrencyItem());
+				String buyerName = Bukkit.getOfflinePlayer(auctionItem.getHighestBidder()).getName() != null ? Bukkit.getOfflinePlayer(auctionItem.getHighestBidder()).getName() : "Unknown";
+
+				if (auctionOwner.isOnline() && auctionOwner.getPlayer() != null) {
 					AuctionHouse.getInstance().getLocale().getMessage("auction.itemsold")
-							.processPlaceholder("item", AuctionAPI.getInstance().getItemName(itemStack))
-							.processPlaceholder("amount", itemStack.clone().getAmount())
-							.processPlaceholder("price", AuctionHouse.getAPI().getFinalizedCurrencyNumber(Settings.TAX_CHARGE_SALES_TAX_TO_BUYER.getBoolean() ? finalPrice : finalPrice - tax, auctionItem.getCurrency(), auctionItem.getCurrencyItem()))
-							.processPlaceholder("buyer_name", Bukkit.getOfflinePlayer(auctionItem.getHighestBidder()).getName())
+							.processPlaceholder("item", itemName)
+							.processPlaceholder("amount", String.valueOf(itemStack.clone().getAmount()))
+							.processPlaceholder("price", sellerPriceStr)
+							.processPlaceholder("buyer_name", buyerName)
 							.processPlaceholder("buyer_displayname", AuctionAPI.getInstance().getDisplayName(Bukkit.getOfflinePlayer(auctionItem.getHighestBidder())))
-							.sendPrefixedMessage(Bukkit.getOfflinePlayer(auctionItem.getOwner()).getPlayer());
+							.sendPrefixedMessage(auctionOwner.getPlayer());
 					AuctionHouse.getInstance().getLocale().getMessage("pricing.moneyadd")
-							.processPlaceholder("player_balance", AuctionHouse.getCurrencyManager().getFormattedBalance(Bukkit.getOfflinePlayer(auctionItem.getOwner()), auctionItem.getCurrency(), auctionItem.getCurrencyItem()))
-							.processPlaceholder("price", AuctionHouse.getAPI().getFinalizedCurrencyNumber(Settings.TAX_CHARGE_SALES_TAX_TO_BUYER.getBoolean() ? finalPrice : finalPrice - tax, auctionItem.getCurrency(), auctionItem.getCurrencyItem()))
-							.sendPrefixedMessage(Bukkit.getOfflinePlayer(auctionItem.getOwner()).getPlayer());
+							.processPlaceholder("player_balance", AuctionHouse.getCurrencyManager().getFormattedBalance(auctionOwner, auctionItem.getCurrency(), auctionItem.getCurrencyItem()))
+							.processPlaceholder("price", sellerPriceStr)
+							.sendPrefixedMessage(auctionOwner.getPlayer());
+				} else {
+					java.util.Map<String, String> itemsoldPlaceholders = new java.util.HashMap<>();
+					itemsoldPlaceholders.put("item", itemName);
+					itemsoldPlaceholders.put("amount", String.valueOf(itemStack.clone().getAmount()));
+					itemsoldPlaceholders.put("price", sellerPriceStr);
+					itemsoldPlaceholders.put("buyer_name", buyerName);
+					AuctionHouse.getNotificationManager().queue(auctionOwner.getUniqueId(), "auction.itemsold", itemsoldPlaceholders);
+					java.util.Map<String, String> moneyaddPlaceholders = new java.util.HashMap<>();
+					moneyaddPlaceholders.put("player_balance", AuctionHouse.getCurrencyManager().getFormattedBalance(auctionOwner, auctionItem.getCurrency(), auctionItem.getCurrencyItem()));
+					moneyaddPlaceholders.put("price", sellerPriceStr);
+					AuctionHouse.getNotificationManager().queue(auctionOwner.getUniqueId(), "pricing.moneyadd", moneyaddPlaceholders);
 				}
 
 				if (auctionWinner.isOnline()) {
@@ -214,6 +232,22 @@ public class TickAuctionsTask extends BukkitRunnable {
 						continue;
 					}
 
+				}
+
+				// Winner offline: queue bid won and money remove notifications
+				if (!auctionWinner.isOnline()) {
+					String winnerPriceStr = AuctionHouse.getAPI().getFinalizedCurrencyNumber(Settings.TAX_CHARGE_SALES_TAX_TO_BUYER.getBoolean() ? finalPrice + tax : finalPrice, auctionItem.getCurrency(), auctionItem.getCurrencyItem());
+					HashMap<String, String> bidwonPlaceholders = new HashMap<>();
+					bidwonPlaceholders.put("item", itemName);
+					bidwonPlaceholders.put("amount", String.valueOf(itemStack.getAmount()));
+					bidwonPlaceholders.put("price", winnerPriceStr);
+					AuctionHouse.getNotificationManager().queue(auctionWinner.getUniqueId(), "auction.bidwon", bidwonPlaceholders);
+					if (!Settings.BIDDING_TAKES_MONEY.getBoolean()) {
+						HashMap<String, String> moneyremovePlaceholders = new HashMap<>();
+						moneyremovePlaceholders.put("player_balance", AuctionHouse.getCurrencyManager().getFormattedBalance(auctionWinner, auctionItem.getCurrency(), auctionItem.getCurrencyItem()));
+						moneyremovePlaceholders.put("price", winnerPriceStr);
+						AuctionHouse.getNotificationManager().queue(auctionWinner.getUniqueId(), "pricing.moneyremove", moneyremovePlaceholders);
+					}
 				}
 
 				auctionItem.setOwner(auctionWinner.getUniqueId());

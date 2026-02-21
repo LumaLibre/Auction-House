@@ -119,6 +119,11 @@ public class PlayerListeners implements Listener {
 				instance.getLocale().newMessage(Common.colorize(String.format("&dYou're running an unreleased version of Auction House &f(&c%s&f)", instance.getDescription().getVersion()))).sendPrefixedMessage(player);
 			}
 		}, 20);
+
+		// Deliver queued offline notifications after a short delay so DB is ready
+		Bukkit.getServer().getScheduler().runTaskLater(AuctionHouse.getInstance(), () -> {
+			AuctionHouse.getNotificationManager().deliverTo(player);
+		}, 50);
 	}
 
 	@EventHandler

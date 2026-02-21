@@ -6,3 +6,4 @@ AuctionHouse.iml
 /buildNumber.properties
 build/
 .gradle/
+.cursor

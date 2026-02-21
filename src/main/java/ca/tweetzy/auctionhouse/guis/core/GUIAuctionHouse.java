@@ -43,6 +43,7 @@ import org.bukkit.inventory.meta.BlockStateMeta;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -50,6 +51,8 @@ public final class GUIAuctionHouse extends AuctionUpdatingPagedGUI<AuctionedItem
 
 	private final AuctionPlayer auctionPlayer;
 	private String searchKeywords;
+	private Long lastItemClick = null;
+	private Long lastRefreshClick = null;
 
 	public GUIAuctionHouse(@NonNull final AuctionPlayer auctionPlayer, String searchKeywords) {
 		super(null, Bukkit.getPlayer(auctionPlayer.getUuid()), Settings.GUI_AUCTION_HOUSE_TITLE.getString(), Settings.GUI_AUCTION_HOUSE_ROWS.getInt(), 20 * Settings.TICK_UPDATE_GUI_TIME.getInt(), new ArrayList<>());
@@ -248,13 +251,75 @@ public final class GUIAuctionHouse extends AuctionUpdatingPagedGUI<AuctionedItem
 	@Override
 	protected void onClick(AuctionedItem auctionedItem, GuiClickEvent click) {
 
-		// Item administration
+		// Watchlist: add/remove listing (middle-click or configured click)
+		if (Settings.WATCHLIST_ENABLED.getBoolean()) {
+			try {
+				if (click.clickType == ClickType.valueOf(Settings.CLICKS_ADD_TO_WATCHLIST.getString().toUpperCase())) {
+					if (click.player.getUniqueId().equals(auctionedItem.getOwner())) {
+						AuctionHouse.getInstance().getLocale().getMessage("watchlist.cannot watch own").sendPrefixedMessage(click.player);
+						return;
+					}
+					if (AuctionHouse.getWatchlistManager().isWatching(click.player.getUniqueId(), auctionedItem.getId())) {
+						AuctionHouse.getWatchlistManager().remove(click.player.getUniqueId(), auctionedItem.getId(), (err, ok) -> {
+							if (ok) {
+								AuctionHouse.getInstance().getLocale().getMessage("watchlist.removed")
+										.processPlaceholder("item", AuctionAPI.getInstance().getItemName(auctionedItem.getItem()))
+										.sendPrefixedMessage(click.player);
+							}
+							draw();
+						});
+					} else {
+						if (AuctionHouse.getWatchlistManager().getWatchlistCount(click.player.getUniqueId()) >= Settings.WATCHLIST_MAX_LISTINGS.getInt()) {
+							AuctionHouse.getInstance().getLocale().getMessage("watchlist.limit reached")
+									.processPlaceholder("max", String.valueOf(Settings.WATCHLIST_MAX_LISTINGS.getInt()))
+									.sendPrefixedMessage(click.player);
+							return;
+						}
+						AuctionHouse.getWatchlistManager().add(click.player.getUniqueId(), auctionedItem.getId(), (err, ok) -> {
+							if (ok) {
+								AuctionHouse.getInstance().getLocale().getMessage("watchlist.added")
+										.processPlaceholder("item", AuctionAPI.getInstance().getItemName(auctionedItem.getItem()))
+										.sendPrefixedMessage(click.player);
+							}
+							draw();
+						});
+					}
+					return;
+				}
+			} catch (IllegalArgumentException ignored) {
+				// Invalid click type in config
+			}
+		}
+
+		// Item administration - allow DROP for admin remove item action
 		if (click.clickType == ClickType.valueOf(Settings.CLICKS_REMOVE_ITEM.getString().toUpperCase())) {
 			if (click.player.isOp() || click.player.hasPermission("auctionhouse.admin")) {
 				cancelTask();
 				click.manager.showGUI(click.player, new GUIAdminItem(this.auctionPlayer, auctionedItem));
 			}
 			return;
+		}
+
+		// Block DROP clicks (F key) on items to prevent spam/lag
+		// Only allow if it's the configured remove item click type (handled above)
+		if (click.clickType == ClickType.DROP) {
+			return; // Silently ignore DROP clicks to prevent spam
+		}
+
+		// Rate limiting for item clicks to prevent spam and server lag
+		if (Settings.MAIN_AH_ITEM_CLICK_COOLDOWN.getLong() > 0) {
+			long currentTime = System.currentTimeMillis();
+			if (this.lastItemClick != null && (currentTime - this.lastItemClick) < Settings.MAIN_AH_ITEM_CLICK_COOLDOWN.getLong()) {
+				// Player is on cooldown, show message and return
+				long remainingTime = Settings.MAIN_AH_ITEM_CLICK_COOLDOWN.getLong() - (currentTime - this.lastItemClick);
+				AuctionHouse.getInstance().getLocale()
+						.getMessage("general.cooldown.item click")
+						.processPlaceholder("time", AuctionHouse.getCooldownManager().formatTime(remainingTime))
+						.sendPrefixedMessage(click.player);
+				return;
+			}
+			// Update last click time
+			this.lastItemClick = currentTime;
 		}
 
 		if (!AuctionHouse.getAPI().isAuctionHouseOpen()) {
@@ -533,11 +598,20 @@ public final class GUIAuctionHouse extends AuctionUpdatingPagedGUI<AuctionedItem
 							else
 								AuctionHouse.getCurrencyManager().deposit(oldBidder, oldBidAmount, auctionItem.getCurrency(), auctionItem.getCurrencyItem());
 
-							if (oldBidder.isOnline())
+							String[] currencyParts = auctionItem.getCurrency().split("/");
+							String balanceStr = AuctionHouse.getAPI().getFinalizedCurrencyNumber(AuctionHouse.getCurrencyManager().getBalance(oldBidder, currencyParts.length > 0 ? currencyParts[0] : "Vault", currencyParts.length > 1 ? currencyParts[1] : "Vault"), auctionItem.getCurrency(), auctionItem.getCurrencyItem());
+							String priceStr = AuctionHouse.getAPI().getFinalizedCurrencyNumber(oldBidAmount, auctionItem.getCurrency(), auctionItem.getCurrencyItem());
+							if (oldBidder.isOnline() && oldBidder.getPlayer() != null) {
 								AuctionHouse.getInstance().getLocale().getMessage("pricing.moneyadd")
-										.processPlaceholder("player_balance", AuctionHouse.getAPI().getFinalizedCurrencyNumber(AuctionHouse.getCurrencyManager().getBalance(oldBidder, auctionItem.getCurrency().split("/")[0], auctionItem.getCurrency().split("/")[1]), auctionItem.getCurrency(), auctionItem.getCurrencyItem()))
-										.processPlaceholder("price", AuctionHouse.getAPI().getFinalizedCurrencyNumber(oldBidAmount, auctionItem.getCurrency(), auctionItem.getCurrencyItem()))
+										.processPlaceholder("player_balance", balanceStr)
+										.processPlaceholder("price", priceStr)
 										.sendPrefixedMessage(oldBidder.getPlayer());
+							} else {
+								HashMap<String, String> placeholders = new HashMap<>();
+								placeholders.put("player_balance", balanceStr);
+								placeholders.put("price", priceStr);
+								AuctionHouse.getNotificationManager().queue(oldBidder.getUniqueId(), "pricing.moneyadd", placeholders);
+							}
 						}
 
 						AuctionHouse.getCurrencyManager().withdraw(click.player, newBiddingAmount, auctionItem.getCurrency(), auctionItem.getCurrencyItem());
@@ -560,12 +634,25 @@ public final class GUIAuctionHouse extends AuctionUpdatingPagedGUI<AuctionedItem
 						auctionItem.setExpiresAt(auctionItem.getExpiresAt() + 1000L * Settings.TIME_TO_INCREASE_BY_ON_BID.getInt());
 					}
 
-					if (oldBidder.isOnline()) {
+					if (oldBidder.isOnline() && oldBidder.getPlayer() != null) {
 						AuctionHouse.getInstance().getLocale().getMessage("auction.outbid").processPlaceholder("player", click.player.getName()).processPlaceholder("player_displayname", AuctionAPI.getInstance().getDisplayName(click.player)).processPlaceholder("item", AuctionAPI.getInstance().getItemName(itemStack)).sendPrefixedMessage(oldBidder.getPlayer());
+					} else {
+						HashMap<String, String> outbidPlaceholders = new HashMap<>();
+						outbidPlaceholders.put("player", click.player.getName());
+						outbidPlaceholders.put("player_displayname", AuctionAPI.getInstance().getDisplayName(click.player));
+						outbidPlaceholders.put("item", AuctionAPI.getInstance().getItemName(itemStack));
+						AuctionHouse.getNotificationManager().queue(oldBidder.getUniqueId(), "auction.outbid", outbidPlaceholders);
 					}
 
-					if (owner.isOnline()) {
+					if (owner.isOnline() && owner.getPlayer() != null) {
 						AuctionHouse.getInstance().getLocale().getMessage("auction.placedbid").processPlaceholder("player", click.player.getName()).processPlaceholder("player_displayname", AuctionAPI.getInstance().getDisplayName(click.player)).processPlaceholder("amount", AuctionHouse.getAPI().getFinalizedCurrencyNumber(auctionItem.getCurrentPrice(), auctionItem.getCurrency(), auctionItem.getCurrencyItem())).processPlaceholder("item", AuctionAPI.getInstance().getItemName(itemStack)).sendPrefixedMessage(owner.getPlayer());
+					} else {
+						HashMap<String, String> placedbidPlaceholders = new HashMap<>();
+						placedbidPlaceholders.put("player", click.player.getName());
+						placedbidPlaceholders.put("player_displayname", AuctionAPI.getInstance().getDisplayName(click.player));
+						placedbidPlaceholders.put("amount", AuctionHouse.getAPI().getFinalizedCurrencyNumber(auctionItem.getCurrentPrice(), auctionItem.getCurrency(), auctionItem.getCurrencyItem()));
+						placedbidPlaceholders.put("item", AuctionAPI.getInstance().getItemName(itemStack));
+						AuctionHouse.getNotificationManager().queue(owner.getUniqueId(), "auction.placedbid", placedbidPlaceholders);
 					}
 
 					if (Settings.BROADCAST_AUCTION_BID.getBoolean()) {
@@ -660,6 +747,16 @@ public final class GUIAuctionHouse extends AuctionUpdatingPagedGUI<AuctionedItem
 				e.manager.showGUI(e.player, new GUIExpiredItems(this, this.auctionPlayer));
 			}));
 
+		}
+
+		if (Settings.WATCHLIST_ENABLED.getBoolean() && Settings.GUI_AUCTION_HOUSE_ITEMS_WATCHLIST_ENABLED.getBoolean()) {
+			SlotHelper.getButtonSlots(Settings.GUI_AUCTION_HOUSE_ITEMS_WATCHLIST_SLOT.getString()).forEach(slot -> setButton(slot, QuickItem
+					.of(Settings.GUI_AUCTION_HOUSE_ITEMS_WATCHLIST_ITEM.getString())
+					.name(Settings.GUI_AUCTION_HOUSE_ITEMS_WATCHLIST_NAME.getString())
+					.lore(this.player, Replacer.replaceVariables(Settings.GUI_AUCTION_HOUSE_ITEMS_WATCHLIST_LORE.getStringList(), "watchlist_count", AuctionHouse.getWatchlistManager().getWatchlistCount(auctionPlayer.getUuid()))).make(), e -> {
+				cancelTask();
+				e.manager.showGUI(e.player, new GUIWatchedListings(this.auctionPlayer));
+			}));
 		}
 
 		if (Settings.GUI_AUCTION_HOUSE_ITEMS_TRANSACTIONS_ENABLED.getBoolean()) {
@@ -770,6 +867,20 @@ public final class GUIAuctionHouse extends AuctionUpdatingPagedGUI<AuctionedItem
 
 		if (Settings.GUI_REFRESH_BTN_ENABLED.getBoolean()) {
 			SlotHelper.getButtonSlots(Settings.GUI_REFRESH_BTN_SLOT.getString()).forEach(slot -> setButton(slot, getRefreshButton(), ClickType.LEFT, e -> {
+				// Early return cooldown check to prevent spam clicking and server lag
+				if (Settings.MAIN_AH_REFRESH_BUTTON_COOLDOWN.getLong() > 0) {
+					long currentTime = System.currentTimeMillis();
+					if (this.lastRefreshClick != null && (currentTime - this.lastRefreshClick) < Settings.MAIN_AH_REFRESH_BUTTON_COOLDOWN.getLong()) {
+						long remainingTime = Settings.MAIN_AH_REFRESH_BUTTON_COOLDOWN.getLong() - (currentTime - this.lastRefreshClick);
+						AuctionHouse.getInstance().getLocale()
+								.getMessage("general.cooldown.refresh")
+								.processPlaceholder("time", AuctionHouse.getCooldownManager().formatTime(remainingTime))
+								.sendPrefixedMessage(e.player);
+						return; // Early return - don't process refresh
+					}
+					this.lastRefreshClick = currentTime;
+				}
+
 				if (Settings.USE_REFRESH_COOL_DOWN.getBoolean()) {
 					if (AuctionHouse.getAuctionPlayerManager().getCooldowns().containsKey(this.auctionPlayer.getPlayer().getUniqueId())) {
 						if (AuctionHouse.getAuctionPlayerManager().getCooldowns().get(this.auctionPlayer.getPlayer().getUniqueId()) > System.currentTimeMillis()) {
