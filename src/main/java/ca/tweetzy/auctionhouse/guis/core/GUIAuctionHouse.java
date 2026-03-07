@@ -22,6 +22,7 @@ import ca.tweetzy.auctionhouse.guis.transaction.GUITransactionList;
 import ca.tweetzy.auctionhouse.guis.transaction.GUITransactionType;
 import ca.tweetzy.auctionhouse.helpers.BundleUtil;
 import ca.tweetzy.auctionhouse.helpers.SlotHelper;
+import ca.tweetzy.auctionhouse.managers.SoundManager;
 import ca.tweetzy.flight.utils.input.TitleInput;
 import ca.tweetzy.auctionhouse.hooks.FloodGateHook;
 import ca.tweetzy.auctionhouse.settings.Settings;
@@ -161,8 +162,8 @@ public final class GUIAuctionHouse extends AuctionUpdatingPagedGUI<AuctionedItem
 		if (this.auctionPlayer != null && Settings.ENABLE_FILTER_SYSTEM.getBoolean()) {
 			baseComparator = createSortComparator(this.auctionPlayer.getAuctionSortType());
 		} else {
-			baseComparator = Comparator.comparing(AuctionedItem::isInfinite).reversed()
-					.thenComparing(Comparator.comparing(AuctionedItem::isListingPriorityActive).reversed());
+			baseComparator = Comparator.comparing(AuctionedItem::isListingPriorityActive).reversed()
+					.thenComparing(Comparator.comparing(AuctionedItem::isInfinite).reversed());
 		}
 		this.items.sort(baseComparator);
 	}
@@ -184,10 +185,10 @@ public final class GUIAuctionHouse extends AuctionUpdatingPagedGUI<AuctionedItem
 				comparator = Comparator.comparing(AuctionedItem::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder()));
 				break;
 		}
-		// Always prioritize infinite items and listing priority
-		return comparator
+		// Priority listings first, then infinite, then sort by selected type within each group
+		return Comparator.comparing(AuctionedItem::isListingPriorityActive).reversed()
 				.thenComparing(Comparator.comparing(AuctionedItem::isInfinite).reversed())
-				.thenComparing(Comparator.comparing(AuctionedItem::isListingPriorityActive).reversed());
+				.thenComparing(comparator);
 	}
 
 	@Override
@@ -397,7 +398,10 @@ public final class GUIAuctionHouse extends AuctionUpdatingPagedGUI<AuctionedItem
 						boolean buyingSpecificQuantity = preAmount > 1;
 						int purchaseQuantity = buyingSpecificQuantity ? preAmount : 0;
 						double pricePerItem = buyingSpecificQuantity ? auctionedItem.getBasePrice() / preAmount : 0D;
-						GUIConfirmPurchase.processPurchase(click.player, this.auctionPlayer, auctionedItem, buyingSpecificQuantity, purchaseQuantity, pricePerItem);
+						boolean success = GUIConfirmPurchase.processPurchase(click.player, this.auctionPlayer, auctionedItem, buyingSpecificQuantity, purchaseQuantity, pricePerItem);
+						if (success) {
+							SoundManager.getInstance().playSound(click.player, Settings.SOUNDS_PURCHASE_SUCCESS.getString());
+						}
 						click.manager.showGUI(click.player, new GUIAuctionHouse(this.auctionPlayer));
 					}
 					return;
@@ -435,6 +439,7 @@ public final class GUIAuctionHouse extends AuctionUpdatingPagedGUI<AuctionedItem
 		if (!buyingQuantity) {
 			if (!auctionItem.playerHasSufficientMoney(click.player, auctionItem.getBasePrice())) {
 				AuctionHouse.getInstance().getLocale().getMessage("general.notenoughmoney").sendPrefixedMessage(click.player);
+				SoundManager.getInstance().playSound(click.player, Settings.SOUNDS_NOT_ENOUGH_MONEY.getString());
 				return;
 			}
 		}
@@ -459,7 +464,10 @@ public final class GUIAuctionHouse extends AuctionUpdatingPagedGUI<AuctionedItem
 			}
 			int purchaseQuantity = buyingSpecificQuantity ? preAmount : 0;
 			double pricePerItem = buyingSpecificQuantity ? auctionItem.getBasePrice() / preAmount : 0D;
-			GUIConfirmPurchase.processPurchase(click.player, this.auctionPlayer, auctionItem, buyingSpecificQuantity, purchaseQuantity, pricePerItem);
+			boolean success = GUIConfirmPurchase.processPurchase(click.player, this.auctionPlayer, auctionItem, buyingSpecificQuantity, purchaseQuantity, pricePerItem);
+			if (success) {
+				SoundManager.getInstance().playSound(click.player, Settings.SOUNDS_PURCHASE_SUCCESS.getString());
+			}
 			click.manager.showGUI(click.player, new GUIAuctionHouse(this.auctionPlayer));
 		}
 	}
@@ -492,7 +500,10 @@ public final class GUIAuctionHouse extends AuctionUpdatingPagedGUI<AuctionedItem
 					}
 					int purchaseQuantity = buyingSpecificQuantity ? preAmount : 0;
 					double pricePerItem = buyingSpecificQuantity ? auctionItem.getBasePrice() / preAmount : 0D;
-					GUIConfirmPurchase.processPurchase(click.player, this.auctionPlayer, auctionItem, buyingSpecificQuantity, purchaseQuantity, pricePerItem);
+					boolean success = GUIConfirmPurchase.processPurchase(click.player, this.auctionPlayer, auctionItem, buyingSpecificQuantity, purchaseQuantity, pricePerItem);
+					if (success) {
+						SoundManager.getInstance().playSound(click.player, Settings.SOUNDS_PURCHASE_SUCCESS.getString());
+					}
 					click.manager.showGUI(click.player, new GUIAuctionHouse(this.auctionPlayer));
 				}
 			}
@@ -562,6 +573,7 @@ public final class GUIAuctionHouse extends AuctionUpdatingPagedGUI<AuctionedItem
 
 					if (Settings.PLAYER_NEEDS_TOTAL_PRICE_TO_BID.getBoolean() && !auctionItem.playerHasSufficientMoney(click.player, newBiddingAmount)) {
 						AuctionHouse.getInstance().getLocale().getMessage("general.notenoughmoney").sendPrefixedMessage(click.player);
+						SoundManager.getInstance().playSound(click.player, Settings.SOUNDS_NOT_ENOUGH_MONEY.getString());
 						AuctionHouse.getGuiManager().showGUI(player, new GUIAuctionHouse(GUIAuctionHouse.this.auctionPlayer));
 						return true;
 					}
@@ -585,6 +597,7 @@ public final class GUIAuctionHouse extends AuctionUpdatingPagedGUI<AuctionedItem
 
 						if (!auctionItem.playerHasSufficientMoney(click.player, newBiddingAmount)) {
 							AuctionHouse.getInstance().getLocale().getMessage("general.notenoughmoney").sendPrefixedMessage(click.player);
+							SoundManager.getInstance().playSound(click.player, Settings.SOUNDS_NOT_ENOUGH_MONEY.getString());
 							return true;
 						}
 

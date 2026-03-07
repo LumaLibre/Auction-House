@@ -27,15 +27,16 @@ import ca.tweetzy.auctionhouse.guis.confirmation.GUIGeneralConfirm;
 import ca.tweetzy.auctionhouse.guis.helpers.GUIFilterHelper;
 import ca.tweetzy.auctionhouse.helpers.BundleUtil;
 import ca.tweetzy.auctionhouse.settings.Settings;
-import ca.tweetzy.core.utils.PlayerUtils;
 import ca.tweetzy.flight.gui.Gui;
 import ca.tweetzy.flight.gui.events.GuiClickEvent;
 import ca.tweetzy.flight.nbtapi.NBT;
 import ca.tweetzy.flight.utils.QuickItem;
+import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -92,13 +93,6 @@ public class GUIExpiredItems extends AuctionPagedGUI<AuctionedItem> {
 
 		if (!Settings.ALLOW_INDIVIDUAL_ITEM_CLAIM.getBoolean()) return;
 
-		final boolean isBundle = BundleUtil.isBundledItem(auctionedItem.getItem());
-
-		if (click.player.getInventory().firstEmpty() == -1) {
-			AuctionHouse.getInstance().getLocale().getMessage("general.noroomclaim").sendPrefixedMessage(click.player);
-			return;
-		}
-
 		if (this.lastClicked == null) {
 			this.lastClicked = System.currentTimeMillis() + Settings.CLAIM_MS_DELAY.getInt();
 		} else if (this.lastClicked > System.currentTimeMillis()) {
@@ -111,7 +105,7 @@ public class GUIExpiredItems extends AuctionPagedGUI<AuctionedItem> {
 			if (Settings.EXPIRE_MENU_REQUIRES_CONFIRM.getBoolean()) {
 				click.manager.showGUI(click.player, new GUIGeneralConfirm(this.auctionPlayer, auctionedItem.getItem(), confirmed -> {
 					if (confirmed) {
-						give(isBundle, auctionedItem, click);
+						give(auctionedItem, click);
 						// Jsinco - Add else check so this isn't called twice.
 					} else {
 						click.manager.showGUI(click.player, new GUIExpiredItems(this.parent, this.auctionPlayer, this.lastClicked));
@@ -120,46 +114,63 @@ public class GUIExpiredItems extends AuctionPagedGUI<AuctionedItem> {
 				}));
 
 			} else {
-				give(isBundle, auctionedItem, click);
+				give(auctionedItem, click);
 			}
 		}
 	}
 
 	// Jsinco - Prevent double reclaiming
-	private void give(boolean isBundle, AuctionedItem auctionedItem, GuiClickEvent click) {
+	private void give(AuctionedItem auctionedItem, GuiClickEvent click) {
 		if (AuctionHouse.getAuctionItemManager().isGarbageItem(auctionedItem)) {
 			return;
 		}
-		// Send to garbage before giving item to help prevent dupe exploits
+		List<ItemStack> toGive = buildStacksToGive(auctionedItem);
+		giveOrDrop(click.player, toGive);
 		AuctionHouse.getAuctionItemManager().sendToGarbage(auctionedItem);
-
-		if (isBundle) {
-			if (Settings.BUNDLE_IS_OPENED_ON_RECLAIM.getBoolean()) {
-				final List<ItemStack> bundleItems = BundleUtil.extractBundleItems(auctionedItem.getItem());
-				PlayerUtils.giveItem(click.player, bundleItems);
-			} else {
-				PlayerUtils.giveItem(click.player, auctionedItem.getItem());
-			}
-		} else {
-			final ItemStack item = auctionedItem.getItem();
-
-			NBT.modify(item, nbt -> {
-				nbt.removeKey("AuctionDupeTracking");
-			});
-
-			if (auctionedItem.isRequest()) {
-				item.setAmount(1);
-				for (int i = 0; i < auctionedItem.getRequestAmount(); i++) {
-					PlayerUtils.giveItem(click.player, item);
-				}
-			} else {
-				PlayerUtils.giveItem(click.player, item);
-			}
-		}
-
 		click.manager.showGUI(click.player, new GUIExpiredItems(this.parent, this.auctionPlayer, this.lastClicked));
 	}
 	// End Jsinco
+
+	/**
+	 * Adds items to the player's inventory; any that don't fit are dropped at the player's feet.
+	 */
+	private void giveOrDrop(Player player, List<ItemStack> stacks) {
+		if (stacks == null || stacks.isEmpty()) return;
+		for (ItemStack stack : stacks) {
+			if (stack == null || stack.getType().isAir()) continue;
+			for (ItemStack leftover : player.getInventory().addItem(stack).values()) {
+				if (player.getWorld() != null) {
+					player.getWorld().dropItemNaturally(player.getLocation(), leftover);
+				}
+			}
+		}
+	}
+
+	/**
+	 * Builds the list of item stacks to give/drop for an expired auction item (bundle handling, NBT cleanup, request amount).
+	 */
+	private List<ItemStack> buildStacksToGive(AuctionedItem auctionItem) {
+		final boolean isBundle = BundleUtil.isBundledItem(auctionItem.getItem());
+		if (isBundle) {
+			if (Settings.BUNDLE_IS_OPENED_ON_RECLAIM.getBoolean()) {
+				return BundleUtil.extractBundleItems(auctionItem.getItem());
+			}
+			return Collections.singletonList(auctionItem.getItem());
+		}
+		final ItemStack item = auctionItem.getItem();
+		NBT.modify(item, nbt -> {
+			nbt.removeKey("AuctionDupeTracking");
+		});
+		if (auctionItem.isRequest()) {
+			item.setAmount(1);
+			List<ItemStack> list = new ArrayList<>(auctionItem.getRequestAmount());
+			for (int i = 0; i < auctionItem.getRequestAmount(); i++) {
+				list.add(item.clone());
+			}
+			return list;
+		}
+		return Collections.singletonList(item);
+	}
 
 	@Override
 	protected void drawFixed() {
@@ -200,41 +211,9 @@ public class GUIExpiredItems extends AuctionPagedGUI<AuctionedItem> {
 					// Jsinco - Maybe add some logging to track how this happened
 					continue;
 				}
-				// Same as before, immediately send to garbage.
+				List<ItemStack> toGive = buildStacksToGive(auctionItem);
+				giveOrDrop(e.player, toGive);
 				AuctionHouse.getAuctionItemManager().sendToGarbage(auctionItem);
-
-				final boolean isBundle = BundleUtil.isBundledItem(auctionItem.getItem());
-
-				if (e.player.getInventory().firstEmpty() == -1) {
-					AuctionHouse.getInstance().getLocale().getMessage("general.noroomclaim").sendPrefixedMessage(e.player);
-					break;
-				}
-
-				// Jsinco - This should be extracted out to a common method but my project cannot index so it's too hard for me to do right now
-				if (isBundle) {
-					if (Settings.BUNDLE_IS_OPENED_ON_RECLAIM.getBoolean()) {
-						final List<ItemStack> bundleItems = BundleUtil.extractBundleItems(auctionItem.getItem());
-						PlayerUtils.giveItem(e.player, bundleItems);
-					} else {
-						PlayerUtils.giveItem(e.player, auctionItem.getItem());
-					}
-				} else {
-					final ItemStack item = auctionItem.getItem();
-					// remove the dupe tracking
-					NBT.modify(item, nbt -> {
-						nbt.removeKey("AuctionDupeTracking");
-					});
-
-					if (auctionItem.isRequest()) {
-						item.setAmount(1);
-						for (int i = 0; i < auctionItem.getRequestAmount(); i++) {
-							PlayerUtils.giveItem(e.player, item);
-						}
-					} else {
-						PlayerUtils.giveItem(e.player, item);
-					}
-				}
-
 			}
 			// End Jsinco
 

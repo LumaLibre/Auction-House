@@ -19,6 +19,7 @@
 package ca.tweetzy.auctionhouse.guis;
 
 import ca.tweetzy.auctionhouse.AuctionHouse;
+import ca.tweetzy.auctionhouse.managers.SoundManager;
 import ca.tweetzy.auctionhouse.settings.Settings;
 import ca.tweetzy.flight.comp.enums.CompSound;
 import ca.tweetzy.flight.gui.Gui;
@@ -73,6 +74,7 @@ public abstract class AuctionUpdatingPagedGUI<T> extends BaseGUI {
 		// Set up page change handler synchronously before async operations
 		setOnPage(e -> {
 			draw();
+			SoundManager.getInstance().playSound(player, Settings.SOUNDS_NAVIGATE_GUI_PAGES.getString());
 		});
 		populateItems();
 		drawFixed();
@@ -282,6 +284,7 @@ public abstract class AuctionUpdatingPagedGUI<T> extends BaseGUI {
 	private void applyDefaults() {
 		setDefaultItem(QuickItem.bg(QuickItem.of(Settings.GUI_FILLER.getString()).make()));
 		setNavigateSound(CompSound.matchCompSound(Settings.SOUNDS_NAVIGATE_GUI_PAGES.getString()).orElse(CompSound.ENTITY_BAT_TAKEOFF));
+		setDefaultSound(CompSound.matchCompSound(Settings.SOUNDS_GUI_CLICK.getString()).orElse(CompSound.UI_BUTTON_CLICK));
 	}
 
 	@Override

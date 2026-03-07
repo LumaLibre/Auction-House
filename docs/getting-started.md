@@ -44,6 +44,8 @@ After installation, the plugin will create a `config.yml` file. You can configur
 - GUI settings
 - And much more
 
+**Translations / Locale:** A locale file is written at `plugins/AuctionHouse/locale/en_us.yml`. You can edit this file now to translate messages, GUI titles, button names, and other plugin text. Your translations will be used when the plugin switches to the new locale system in a future update.
+
 ### 2. Permissions Setup
 
 Set up permissions for your players. Basic permissions include:
