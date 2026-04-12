@@ -8,14 +8,14 @@
 
     <name>AuctionHouse</name>
     <description>The ultimate auction solution for your server</description>
-    <version>2.159.0</version>
+    <version>2.161.0</version>
     <packaging>jar</packaging>
     <properties>
         <author>Kiran Hart</author>
         <jarName>${project.name}</jarName>
         <main.class>${project.groupId}.${project.artifactId}.${project.name}</main.class>
         <java.version>21</java.version>
-        <flight.version>3.44.0</flight.version>
+        <flight.version>3.45.0</flight.version>
         <flight.path>ca.tweetzy</flight.path>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
@@ -141,10 +141,11 @@
             <version>1.7</version>
             <scope>provided</scope>
         </dependency>
+        <!-- Shaded as auctionhouse.core — TweetyPlugin, TweetyCore, ColorFormatter (build artifact from tweetycore sources, e.g. Archived/Tweety). -->
         <dependency>
             <groupId>ca.tweetzy</groupId>
             <artifactId>tweetycore</artifactId>
-            <version>3.11.0</version>
+            <version>3.11.1</version>
         </dependency>
         <dependency>
             <groupId>${flight.path}</groupId>

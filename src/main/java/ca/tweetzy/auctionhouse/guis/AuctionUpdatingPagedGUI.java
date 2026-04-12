@@ -67,6 +67,7 @@ public abstract class AuctionUpdatingPagedGUI<T> extends BaseGUI {
 	@Override
 	protected void draw() {
 		// Preserve page number before reset (reset() sets page = 1)
+
 		int currentPage = this.page;
 		reset();
 		// Restore page number after reset
@@ -157,6 +158,10 @@ public abstract class AuctionUpdatingPagedGUI<T> extends BaseGUI {
 		if (this.items != null) {
 			// Do all heavy work async, then update GUI on main thread
 			AuctionHouse.newChain().asyncFirst(() -> {
+				for (int i = 0; i < this.getRows() * 9; i++) {
+					setItem(i, getDefaultItem());
+				}
+
 				// Heavy operations on async thread:
 				// - prePopulate() might do filtering/sorting
 				// - Stream operations for pagination
@@ -192,8 +197,9 @@ public abstract class AuctionUpdatingPagedGUI<T> extends BaseGUI {
 				// Calculate pages
 				pages = (int) Math.max(1, Math.ceil(this.items.size() / (double) this.fillSlots().size()));
 				
-				// Clear fill slots
-				this.fillSlots().forEach(slot -> setItem(slot, getDefaultItem()));
+				// Clear fill slots & set bg
+	
+				this.fillSlots().forEach(slot -> setItem(slot, getEmptyFillSlotItem()));
 
 				// Set up navigation buttons
 				// Only show previous button if not on first page
@@ -231,6 +237,10 @@ public abstract class AuctionUpdatingPagedGUI<T> extends BaseGUI {
 				}
 			}).execute();
 		}
+	}
+
+	protected ItemStack getEmptyFillSlotItem() {
+		return getDefaultItem();
 	}
 
 	protected abstract ItemStack makeDisplayItem(final T object);

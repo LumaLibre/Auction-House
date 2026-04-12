@@ -441,6 +441,8 @@ public final class Settings extends SettingTemp {
 	// ==================== Main Auction Menu ==================== //
 	public static ConfigEntry GUI_MAIN_ROWS = create("gui.main.rows", 6, "How many rows should the gui have");
 	public static ConfigEntry GUI_MAIN_FILL_SLOTS = create("gui.main.fill slots", IntStream.rangeClosed(0, 44).boxed().collect(Collectors.toList()), "Slot numbers where auction items will be placed");
+	public static ConfigEntry GUI_MAIN_FILL_ITEM = create("gui.main.fill item", GUI_FILLER.get(), "Item used to fill empty listing slots in the main auction house GUI", "This only applies to slots defined in gui.main.fill slots");
+	public static ConfigEntry GUI_MAIN_BG_ITEM = create("gui.main.bg item", GUI_FILLER.get(), "Default/background item for the main auction house GUI", "Used for non-listing slots and any empty/locked slots in this GUI");
 	public static ConfigEntry GUI_MAIN_DECORATION = create("gui.main.decoration", Collections.singletonList(""), "Additional Decoration Items, format is MATERIAL_NAME:slot so ex. DIAMOND:1");
 
 	public static ConfigEntry GUI_MAIN_ITEMS_COLLECTION_BIN_SLOT = create("gui.main.items.collection bin.slot", 46, "What slot should this item be placed in?");
