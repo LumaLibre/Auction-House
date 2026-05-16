@@ -391,15 +391,17 @@ public class GUIConfirmPurchase extends AuctionBaseGUI {
 					.processPlaceholder("player_balance", sellerBalanceStr)
 					.processPlaceholder("price", priceFormatted)
 					.sendPrefixedMessage(seller.getPlayer());
+
+			SoundManager.getInstance().playSound(seller.getPlayer(), Settings.SOUNDS_ITEM_SOLD.getString());
 		} else {
-			java.util.Map<String, String> itemsoldPlaceholders = new java.util.HashMap<>();
+			Map<String, String> itemsoldPlaceholders = new HashMap<>();
 			itemsoldPlaceholders.put("item", itemName);
 			itemsoldPlaceholders.put("amount", String.valueOf(qtyOverride));
 			itemsoldPlaceholders.put("price", priceFormatted);
 			itemsoldPlaceholders.put("buyer_name", player.getName());
 			AuctionHouse.getNotificationManager().queue(seller.getUniqueId(), "auction.itemsold", itemsoldPlaceholders);
 
-			java.util.Map<String, String> moneyaddPlaceholders = new java.util.HashMap<>();
+			Map<String, String> moneyaddPlaceholders = new HashMap<>();
 			moneyaddPlaceholders.put("player_balance", sellerBalanceStr);
 			moneyaddPlaceholders.put("price", priceFormatted);
 			AuctionHouse.getNotificationManager().queue(seller.getUniqueId(), "pricing.moneyadd", moneyaddPlaceholders);
@@ -431,6 +433,7 @@ public class GUIConfirmPurchase extends AuctionBaseGUI {
 		setActionForRange(this.buyingSpecificQuantity ? 9 : 0, this.buyingSpecificQuantity ? 12 : 3, ClickType.LEFT, e -> {
 			boolean success = processPurchase(e.player, this.auctionPlayer, this.auctionItem, this.buyingSpecificQuantity, this.purchaseQuantity, this.pricePerItem);
 			if (success) {
+				SoundManager.getInstance().playSound(e.player, Settings.SOUNDS_PURCHASE_SUCCESS.getString());
 				this.safeTransitionTo(e.manager, new GUIAuctionHouse(this.auctionPlayer));
 			} else {
 				this.safeTransitionTo(e.manager, new GUIAuctionHouse(this.auctionPlayer));

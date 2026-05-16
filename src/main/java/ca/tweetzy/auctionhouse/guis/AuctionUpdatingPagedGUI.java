@@ -19,6 +19,7 @@
 package ca.tweetzy.auctionhouse.guis;
 
 import ca.tweetzy.auctionhouse.AuctionHouse;
+import ca.tweetzy.auctionhouse.managers.SoundManager;
 import ca.tweetzy.auctionhouse.settings.Settings;
 import ca.tweetzy.flight.comp.enums.CompSound;
 import ca.tweetzy.flight.folialib.wrapper.task.WrappedTask;
@@ -65,6 +66,7 @@ public abstract class AuctionUpdatingPagedGUI<T> extends BaseGUI {
 	@Override
 	protected void draw() {
 		// Preserve page number before reset (reset() sets page = 1)
+
 		int currentPage = this.page;
 		reset();
 		// Restore page number after reset
@@ -72,6 +74,7 @@ public abstract class AuctionUpdatingPagedGUI<T> extends BaseGUI {
 		// Set up page change handler synchronously before async operations
 		setOnPage(e -> {
 			draw();
+			SoundManager.getInstance().playSound(player, Settings.SOUNDS_NAVIGATE_GUI_PAGES.getString());
 		});
 		populateItems();
 		drawFixed();
@@ -154,6 +157,9 @@ public abstract class AuctionUpdatingPagedGUI<T> extends BaseGUI {
 		if (this.items != null) {
 			// Do all heavy work async, then update GUI on main thread
 			AuctionHouse.getInstance().getScheduler().runAsync((a) -> {
+                for (int i = 0; i < this.getRows() * 9; i++) {
+                    setItem(i, getDefaultItem());
+                }
 				// Heavy operations on async thread:
 				// - prePopulate() might do filtering/sorting
 				// - Stream operations for pagination
@@ -189,9 +195,9 @@ public abstract class AuctionUpdatingPagedGUI<T> extends BaseGUI {
 					// All GUI operations on main thread (required for Bukkit API)
 					// Calculate pages
 					pages = (int) Math.max(1, Math.ceil(this.items.size() / (double) this.fillSlots().size()));
+					// Clear fill slots & set bg
 
-					// Clear fill slots
-					this.fillSlots().forEach(slot -> setItem(slot, getDefaultItem()));
+                    this.fillSlots().forEach(slot -> setItem(slot, getEmptyFillSlotItem()));
 
 					// Set up navigation buttons
 					// Only show previous button if not on first page
@@ -230,6 +236,10 @@ public abstract class AuctionUpdatingPagedGUI<T> extends BaseGUI {
 				});
 			});
 		}
+	}
+
+	protected ItemStack getEmptyFillSlotItem() {
+		return getDefaultItem();
 	}
 
 	protected abstract ItemStack makeDisplayItem(final T object);
@@ -283,6 +293,7 @@ public abstract class AuctionUpdatingPagedGUI<T> extends BaseGUI {
 	private void applyDefaults() {
 		setDefaultItem(QuickItem.bg(QuickItem.of(Settings.GUI_FILLER.getString()).make()));
 		setNavigateSound(CompSound.matchCompSound(Settings.SOUNDS_NAVIGATE_GUI_PAGES.getString()).orElse(CompSound.ENTITY_BAT_TAKEOFF));
+		setDefaultSound(CompSound.matchCompSound(Settings.SOUNDS_GUI_CLICK.getString()).orElse(CompSound.UI_BUTTON_CLICK));
 	}
 
 	@Override

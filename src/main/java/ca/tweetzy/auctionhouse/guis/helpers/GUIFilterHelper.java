@@ -135,20 +135,20 @@ public final class GUIFilterHelper {
 				break;
 		}
 		
-		// Always prioritize infinite items and listing priority
-		return comparator
+		// Priority listings first, then infinite, then sort by selected type within each group
+		return Comparator.comparing(AuctionedItem::isListingPriorityActive).reversed()
 				.thenComparing(Comparator.comparing(AuctionedItem::isInfinite).reversed())
-				.thenComparing(Comparator.comparing(AuctionedItem::isListingPriorityActive).reversed());
+				.thenComparing(comparator);
 	}
 
 	/**
-	 * Creates a default comparator that prioritizes infinite items and listing priority
+	 * Creates a default comparator that prioritizes listing priority then infinite items
 	 *
 	 * @return A comparator for default sorting
 	 */
 	public static Comparator<AuctionedItem> createDefaultComparator() {
-		return Comparator.comparing(AuctionedItem::isInfinite).reversed()
-				.thenComparing(Comparator.comparing(AuctionedItem::isListingPriorityActive).reversed());
+		return Comparator.comparing(AuctionedItem::isListingPriorityActive).reversed()
+				.thenComparing(Comparator.comparing(AuctionedItem::isInfinite).reversed());
 	}
 }
 

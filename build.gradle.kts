@@ -136,8 +136,8 @@ dependencies {
     compileOnly(libs.org.geysermc.floodgate.api)
 }
 
-group = "ca.tweetzy"
-version = "2.155.1"
+group = "ca.tweetzy.auctionhouse"
+version = "2.161.0"
 description = "AuctionHouse"
 java.sourceCompatibility = JavaVersion.VERSION_21
 

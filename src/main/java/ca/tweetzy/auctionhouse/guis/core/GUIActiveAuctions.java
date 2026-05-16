@@ -59,6 +59,7 @@ public class GUIActiveAuctions extends AuctionUpdatingPagedGUI<AuctionedItem> {
 		}
 
 		applyClose();
+		setAllowShiftClick(true);
 		draw();
 	}
 

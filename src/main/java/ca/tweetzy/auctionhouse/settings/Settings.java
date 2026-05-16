@@ -692,6 +692,8 @@ public class Settings {
 	public static final ConfigSetting GUI_AUCTION_HOUSE_TITLE = new ConfigSetting(config, "gui.auction house.title", "&7Auction House");
 	public static final ConfigSetting GUI_AUCTION_HOUSE_ROWS = new ConfigSetting(config, "gui.auction house.rows", 6);
 	public static final ConfigSetting GUI_AUCTION_HOUSE_FILL_SLOTS = new ConfigSetting(config, "gui.auction house.fill slots", IntStream.rangeClosed(0, 44).boxed().collect(Collectors.toList()));
+	public static final ConfigSetting GUI_AUCTION_HOUSE_FILL_ITEM = new ConfigSetting(config, "gui.auction house.fill item", GUI_FILLER.getString(), "Item used to fill empty listing slots in the main auction house GUI", "This only applies to slots defined in gui.auction house.fill slots");
+	public static final ConfigSetting GUI_AUCTION_HOUSE_BG_ITEM = new ConfigSetting(config, "gui.auction house.bg item", GUI_FILLER.getString(), "Default/background item for the main auction house GUI", "Used for non-listing slots and any empty/locked slots in this GUI");
 
 
 	public static final ConfigSetting GUI_AUCTION_HOUSE_ITEMS_GUIDE_ENABLED = new ConfigSetting(config, "gui.auction house.items.guide.enabled", true);
@@ -1874,6 +1876,9 @@ public class Settings {
 	public static final ConfigSetting SOUNDS_LISTED_ITEM_ON_AUCTION_HOUSE = new ConfigSetting(config, "sounds.listed item on the auction house", CompSound.ENTITY_EXPERIENCE_ORB_PICKUP.friendlyName());
 	public static final ConfigSetting SOUNDS_NAVIGATE_GUI_PAGES = new ConfigSetting(config, "sounds.navigated between gui pages", CompSound.ENTITY_BAT_TAKEOFF.friendlyName());
 	public static final ConfigSetting SOUNDS_NOT_ENOUGH_MONEY = new ConfigSetting(config, "sounds.not enough money", CompSound.ENTITY_ITEM_BREAK.friendlyName());
+	public static final ConfigSetting SOUNDS_PURCHASE_SUCCESS = new ConfigSetting(config, "sounds.purchase success", CompSound.ENTITY_EXPERIENCE_ORB_PICKUP.friendlyName());
+	public static final ConfigSetting SOUNDS_ITEM_SOLD = new ConfigSetting(config, "sounds.item sold", CompSound.BLOCK_NOTE_BLOCK_PLING.friendlyName());
+	public static final ConfigSetting SOUNDS_GUI_CLICK = new ConfigSetting(config, "sounds.gui click", CompSound.UI_BUTTON_CLICK.friendlyName());
 
 	/*  ===============================
 	 *      TRANSACTION LOGGING

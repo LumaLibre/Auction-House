@@ -43,6 +43,29 @@ public class SoundManager {
 	}
 
 	public void playSound(Player player, String sound) {
-		player.playSound(player.getLocation(), CompSound.of(sound).orElse(CompSound.ENTITY_BAT_TAKEOFF).get(), Float.parseFloat(Settings.SOUND_VOLUME.getString()), Float.parseFloat(Settings.SOUND_PITCH.getString()));
+		if (player == null) return;
+
+		float volume = parseFloatSafe(Settings.SOUND_VOLUME.getString(), 1.0f);
+		float pitch = parseFloatSafe(Settings.SOUND_PITCH.getString(), 1.0f);
+		if (volume < 0f) return;
+
+		// Skip only when explicitly disabled; null/blank uses fallback so missing config still plays
+		if (sound != null && !sound.isBlank()) {
+			String normalized = sound.trim().toLowerCase();
+			if ("none".equals(normalized) || "off".equals(normalized) || "disabled".equals(normalized)) return;
+		}
+
+		String soundToPlay = (sound != null && !sound.isBlank()) ? sound.trim() : CompSound.ENTITY_BAT_TAKEOFF.name();
+		CompSound compSound = CompSound.of(soundToPlay).orElse(CompSound.ENTITY_BAT_TAKEOFF);
+		player.playSound(player.getLocation(), compSound.get(), volume, pitch);
+	}
+
+	private static float parseFloatSafe(String value, float defaultValue) {
+		if (value == null || value.isBlank()) return defaultValue;
+		try {
+			return Float.parseFloat(value.trim());
+		} catch (NumberFormatException e) {
+			return defaultValue;
+		}
 	}
 }
