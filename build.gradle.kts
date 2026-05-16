@@ -139,7 +139,7 @@ dependencies {
 group = "ca.tweetzy.auctionhouse"
 version = "2.161.0"
 description = "AuctionHouse"
-java.sourceCompatibility = JavaVersion.VERSION_21
+java.sourceCompatibility = JavaVersion.VERSION_25
 
 publishing {
     publications.create<MavenPublication>("maven") {
