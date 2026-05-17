@@ -4,7 +4,7 @@
 [versions]
 ca-tweetzy-flight = "3.47.0" # From: repo.jsinco.dev/releases
 ca-tweetzy-funds = "1.10.0"
-ca-tweetzy-tweetycore = "3.11.0"
+ca-tweetzy-tweetycore = "3.11.1"
 co-aikar-taskchain-bukkit = "3.7.2"
 com-acrobot-chestshop-chestshop = "3.12"
 com-github-milkbowl-vaultapi = "1.7"

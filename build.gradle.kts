@@ -8,7 +8,7 @@ import org.gradle.kotlin.dsl.filter
 plugins {
     `java-library`
     `maven-publish`
-    id("com.gradleup.shadow") version "9.2.2"
+    id("com.gradleup.shadow") version "9.4.1"
     id("xyz.jpenilla.run-paper") version "2.3.1"
     id("io.freefair.lombok") version "9.1.0"
 }
@@ -110,18 +110,20 @@ repositories {
 
 dependencies {
     api(libs.ca.tweetzy.flight)
-    api(libs.ca.tweetzy.tweetycore)
-    api(libs.ca.tweetzy.funds)
-    api(libs.su.nightexpress.coinsengine.coinsengine) {
+    api(libs.ca.tweetzy.tweetycore) {
         isTransitive = false
     }
-    api(libs.com.github.zrips.cmi.api)
-    api(libs.co.aikar.taskchain.bukkit)
-    api(libs.com.zaxxer.hikaricp)
-    api(libs.io.lumine.mythiclib)
-    api(libs.org.slf4j.slf4j.api)
-    api(libs.org.slf4j.slf4j.nop)
-    api(libs.com.google.code.gson.gson)
+    compileOnly(libs.ca.tweetzy.funds)
+    compileOnly(libs.su.nightexpress.coinsengine.coinsengine) {
+        isTransitive = false
+    }
+    compileOnly(libs.com.github.zrips.cmi.api)
+    compileOnly(libs.co.aikar.taskchain.bukkit)
+    compileOnly(libs.com.zaxxer.hikaricp)
+    compileOnly(libs.io.lumine.mythiclib)
+    compileOnly(libs.org.slf4j.slf4j.api)
+    compileOnly(libs.org.slf4j.slf4j.nop)
+    compileOnly(libs.com.google.code.gson.gson)
     compileOnly(libs.su.nightexpress.nightcore.main)
     compileOnly(libs.org.spigotmc.spigot)
     compileOnly(libs.com.github.milkbowl.vaultapi)
@@ -180,7 +182,6 @@ tasks {
         relocate("com.zaxxer.hikari", "$pack.lib.hikari")
         relocate("org.slf4j", "$pack.lib.slf4j")
         relocate("co.aikar.taskchain", "$pack.lib.taskchain")
-        exclude("kotlin/**")
         archiveClassifier.set("")
     }
 
