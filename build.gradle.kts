@@ -109,9 +109,7 @@ repositories {
 }
 
 dependencies {
-    api(libs.ca.tweetzy.flight)  {
-        exclude(group = "org.slf4j")
-    }
+    api(libs.ca.tweetzy.flight)
     api(libs.ca.tweetzy.tweetycore) {
         isTransitive = false
     }
